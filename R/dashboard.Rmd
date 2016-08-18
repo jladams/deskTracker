@@ -1,0 +1,142 @@
+---
+title: "RIS Desk Tracker"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    style: styles.css 
+runtime: shiny
+---
+
+```{r}
+source("../R/prep.R")
+```
+
+Sidebar {.sidebar}
+=======================================================================
+
+### Select Filters
+
+```{r}
+dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Date())
+textOutput("dateValidate")
+
+checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique(df1$mode %>% na.omit() %>% as.vector())), selected = c(unique(df1$mode %>% na.omit() %>% as.vector())))
+
+checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(df1$type %>% na.omit() %>% as.vector())), selected = c(unique(df1$type %>% na.omit() %>% as.vector())))
+
+radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"))
+```
+
+Overview
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+### Bars
+```{r}
+
+```
+
+Row
+-----------------------------------------------------------------------
+### Heatmap
+
+```{r}
+
+```
+
+By Mode of Interaction
+=======================================================================
+```{r}
+df_mode <- reactive({
+  df <- df() %>%
+    group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(mode, weekday, hour) %>%
+    summarize(value = func()(value))
+})
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Heatmap
+```{r}
+plotOutput("modeHeat")
+
+output$modeHeat <- renderPlot({
+  p <- ggplot(data = df_mode(), aes(x = hour, y = weekday))
+  p <- p +
+    geom_tile(aes(fill = value), color = "black") +
+    scale_fill_gradient(low="mistyrose", high="navy", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
+    labs(x="Hour", y="Weekday")
+  return(p)
+})
+
+```
+
+### Bar Chart
+```{r}
+```
+
+Row
+-----------------------------------------------------------------------
+### Data
+
+```{r}
+
+output$heatData <- renderTable({df_mode()})
+tableOutput("heatData")
+```
+
+By Type of Interaction
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Row
+-----------------------------------------------------------------------
+### Chart B
+
+```{r}
+
+```
+
+Raw Data
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+### Raw Data
+```{r}
+output$df <- renderTable(df())
+tableOutput("df")
+```
+
+
+```{r}
+raw <- read.csv("../data/deskTracker.csv")
+
+func <- reactive({ func <- match.fun(as.character(input$calculation)) })
+
+df <- reactive({
+  df <- raw %>%
+  select(response_set,date_time,question,response) %>%
+  spread(question, response) %>%
+  select(id = response_set, date = date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`) %>%
+  mutate(value = 1) %>%
+  filter(as.Date(date) >= as.Date(input$dates[1]) & as.Date(date) <= as.Date(input$dates[2])) %>%
+  filter(mode %in% input$mode & type %in% input$type)
+})
+
+output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
+
+```
