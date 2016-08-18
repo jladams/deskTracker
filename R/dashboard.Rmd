@@ -54,7 +54,7 @@ df_mode <- reactive({
     group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
     summarize(value = sum(value)) %>%
     group_by(mode, weekday, hour) %>%
-    summarize(value = func()(value))
+    summarize(value = calc()(value))
 })
 ```
 
@@ -69,7 +69,7 @@ output$modeHeat <- renderPlot({
   p <- ggplot(data = df_mode(), aes(x = hour, y = weekday))
   p <- p +
     geom_tile(aes(fill = value), color = "black") +
-    scale_fill_gradient(low="mistyrose", high="navy", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
+    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
     labs(x="Hour", y="Weekday")
   return(p)
 })
@@ -86,28 +86,53 @@ Row
 
 ```{r}
 
-output$heatData <- renderTable({df_mode()})
-tableOutput("heatData")
+output$modeHeatData <- renderTable({df_mode()})
+tableOutput("modeHeatData")
 ```
 
 By Type of Interaction
 =======================================================================
 
-Row
+```{r}
+df_type <- reactive({
+  df <- df() %>%
+    group_by(type, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(type, weekday, hour) %>%
+    summarize(value = calc()(value))
+})
+```
+
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Chart A
-
+### Heatmap
 ```{r}
+plotOutput("typeHeat")
 
+output$typeHeat <- renderPlot({
+  p <- ggplot(data = df_type(), aes(x = hour, y = weekday))
+  p <- p +
+    geom_tile(aes(fill = value), color = "black") +
+    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
+    labs(x="Hour", y="Weekday")
+  return(p)
+})
+
+```
+
+### Bar Chart
+```{r}
 ```
 
 Row
 -----------------------------------------------------------------------
-### Chart B
+### Data
 
 ```{r}
 
+output$typeHeatData <- renderTable({df_type()})
+tableOutput("typeHeatData")
 ```
 
 Raw Data
@@ -125,7 +150,7 @@ tableOutput("df")
 ```{r}
 raw <- read.csv("../data/deskTracker.csv")
 
-func <- reactive({ func <- match.fun(as.character(input$calculation)) })
+calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 
 df <- reactive({
   df <- raw %>%
