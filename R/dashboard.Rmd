@@ -25,7 +25,9 @@ checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique
 
 checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(df1$type %>% na.omit() %>% as.vector())), selected = c(unique(df1$type %>% na.omit() %>% as.vector())))
 
-radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"))
+checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(df1$term %>% na.omit() %>% as.vector())), selected = c(unique(df1$term %>% na.omit() %>% as.vector())))
+
+radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
 ```
 
 Overview
@@ -49,11 +51,19 @@ Row
 By Mode of Interaction
 =======================================================================
 ```{r}
-df_mode <- reactive({
+dfMode <- reactive({
   df <- df() %>%
     group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
     summarize(value = sum(value)) %>%
     group_by(mode, weekday, hour) %>%
+    summarize(value = calc()(value))
+})
+
+dfModeBars <- reactive({
+  df <- df() %>%
+    group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(mode, weekday) %>%
     summarize(value = calc()(value))
 })
 ```
@@ -66,7 +76,7 @@ Row {.tabset .tabset-fade}
 plotOutput("modeHeat")
 
 output$modeHeat <- renderPlot({
-  p <- ggplot(data = df_mode(), aes(x = hour, y = weekday))
+  p <- ggplot(data = dfMode(), aes(x = hour, y = weekday))
   p <- p +
     geom_tile(aes(fill = value), color = "black") +
     scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
@@ -78,6 +88,17 @@ output$modeHeat <- renderPlot({
 
 ### Bar Chart
 ```{r}
+plotOutput("modeBars")
+
+output$modeBars <- renderPlot({
+  p <- ggplot(data = dfModeBars(), aes(x = weekday, y = value))
+  p <- p +
+    geom_bar(aes(fill = mode), stat = "identity", position = "dodge") +
+    geom_text(aes(label = round(value, 2), group = mode), position = position_dodge(width = 1), vjust = 0) + 
+    scale_fill_discrete(guide = guide_legend(title = expression(paste("Mode of Interaction")))) +
+    labs(x = "Weekday", y = "Number of Interactions")
+  return(p)
+})
 ```
 
 Row
@@ -86,7 +107,7 @@ Row
 
 ```{r}
 
-output$modeHeatData <- renderTable({df_mode()})
+output$modeHeatData <- renderTable({dfMode()})
 tableOutput("modeHeatData")
 ```
 
@@ -94,7 +115,7 @@ By Type of Interaction
 =======================================================================
 
 ```{r}
-df_type <- reactive({
+dfType <- reactive({
   df <- df() %>%
     group_by(type, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
     summarize(value = sum(value)) %>%
@@ -111,7 +132,7 @@ Row {.tabset .tabset-fade}
 plotOutput("typeHeat")
 
 output$typeHeat <- renderPlot({
-  p <- ggplot(data = df_type(), aes(x = hour, y = weekday))
+  p <- ggplot(data = dfType(), aes(x = hour, y = weekday))
   p <- p +
     geom_tile(aes(fill = value), color = "black") +
     scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
@@ -131,7 +152,7 @@ Row
 
 ```{r}
 
-output$typeHeatData <- renderTable({df_type()})
+output$typeHeatData <- renderTable({dfType()})
 tableOutput("typeHeatData")
 ```
 
@@ -148,18 +169,15 @@ tableOutput("df")
 
 
 ```{r}
-raw <- read.csv("../data/deskTracker.csv")
+
+
 
 calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 
 df <- reactive({
-  df <- raw %>%
-  select(response_set,date_time,question,response) %>%
-  spread(question, response) %>%
-  select(id = response_set, date = date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`) %>%
-  mutate(value = 1) %>%
-  filter(as.Date(date) >= as.Date(input$dates[1]) & as.Date(date) <= as.Date(input$dates[2])) %>%
-  filter(mode %in% input$mode & type %in% input$type)
+  df <- df1 %>%
+    filter(as.Date(date) >= as.Date(input$dates[1]) & as.Date(date) <= as.Date(input$dates[2])) %>%
+    filter(mode %in% input$mode & type %in% input$type & term %in% input$term)
 })
 
 output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
