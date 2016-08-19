@@ -57,15 +57,19 @@ getTerms <- function(date_time){
 ts <- seq.POSIXt(as.POSIXct("2009-06-25 0:00"), as.POSIXct("2016-08-17 23:59"), by = "hour")
 ts <- data.frame(date = ts)
 
-raw <- read.csv("../data/deskTracker.csv")
+raw <- read.csv("../data/deskTracker.csv", stringsAsFactors = FALSE)
 raw <- raw %>%
   mutate(date = as.POSIXct(floor_date(ymd_hms(raw$date_time), "hour"))) %>%
   select(response_set, date, question, response) %>%
   spread(question, response)
+
 raw <- full_join(ts, raw)
 raw <- raw %>%
-  mutate(id = as.character(rownames(raw)), value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date)))
-
-df1 <- raw %>%
+  mutate(id = response_set, value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date))) %>%
+  replace_na(replace = list(`*Type of Communication` = "NA", `*Type of Transaction` = "NA", `Referral to:` = "NA")) %>%
   select(id, date, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
 
+
+df1 <- raw %>%
+  select(id, date, mode, type, referral, term, value)
+  

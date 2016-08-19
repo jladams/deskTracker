@@ -21,11 +21,11 @@ Sidebar {.sidebar}
 dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Date())
 textOutput("dateValidate")
 
-checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique(df1$mode %>% na.omit() %>% as.vector())), selected = c(unique(df1$mode %>% na.omit() %>% as.vector())))
+checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique(factor(df1$mode) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$mode) %>% na.omit() %>% as.vector())))
 
-checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(df1$type %>% na.omit() %>% as.vector())), selected = c(unique(df1$type %>% na.omit() %>% as.vector())))
+checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())))
 
-checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(df1$term %>% na.omit() %>% as.vector())), selected = c(unique(df1$term %>% na.omit() %>% as.vector())))
+checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())))
 
 radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
 ```
@@ -59,13 +59,15 @@ dfMode <- reactive({
     summarize(value = calc()(value))
 })
 
-dfModeBars <- reactive({
+dfModeBars <- reactive(  
   df <- df() %>%
-    group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE)) %>%
+    group_by(mode, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
     summarize(value = sum(value)) %>%
     group_by(mode, weekday) %>%
-    summarize(value = calc()(value))
-})
+    summarize(value = calc()(value)) %>%
+    filter(mode != "NA")
+)
+
 ```
 
 Row {.tabset .tabset-fade}
@@ -75,14 +77,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("modeHeat")
 
-output$modeHeat <- renderPlot({
-  p <- ggplot(data = dfMode(), aes(x = hour, y = weekday))
-  p <- p +
-    geom_tile(aes(fill = value), color = "black") +
-    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
-    labs(x="Hour", y="Weekday")
-  return(p)
-})
+output$modeHeat <- renderPlot({plotHeat(dfMode())})
 
 ```
 
@@ -90,15 +85,7 @@ output$modeHeat <- renderPlot({
 ```{r}
 plotOutput("modeBars")
 
-output$modeBars <- renderPlot({
-  p <- ggplot(data = dfModeBars(), aes(x = weekday, y = value))
-  p <- p +
-    geom_bar(aes(fill = mode), stat = "identity", position = "dodge") +
-    geom_text(aes(label = round(value, 2), group = mode), position = position_dodge(width = 1), vjust = 0) + 
-    scale_fill_discrete(guide = guide_legend(title = expression(paste("Mode of Interaction")))) +
-    labs(x = "Weekday", y = "Number of Interactions")
-  return(p)
-})
+output$modeBars <- renderPlot({plotBars(dfModeBars(), "mode")})
 ```
 
 Row
@@ -106,9 +93,9 @@ Row
 ### Data
 
 ```{r}
+output$modeHeatData <- renderDataTable({dfMode()})
 
-output$modeHeatData <- renderTable({dfMode()})
-tableOutput("modeHeatData")
+dataTableOutput("modeHeatData")
 ```
 
 By Type of Interaction
@@ -122,6 +109,15 @@ dfType <- reactive({
     group_by(type, weekday, hour) %>%
     summarize(value = calc()(value))
 })
+
+dfTypeBars <- reactive(  
+  df <- df() %>%
+    group_by(type, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(type, weekday) %>%
+    summarize(value = calc()(value)) %>%
+    filter(type != "NA")
+)
 ```
 
 Row {.tabset .tabset-fade}
@@ -131,19 +127,15 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("typeHeat")
 
-output$typeHeat <- renderPlot({
-  p <- ggplot(data = dfType(), aes(x = hour, y = weekday))
-  p <- p +
-    geom_tile(aes(fill = value), color = "black") +
-    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
-    labs(x="Hour", y="Weekday")
-  return(p)
-})
+output$typeHeat <- renderPlot({plotHeat(dfType())})
 
 ```
 
 ### Bar Chart
 ```{r}
+plotOutput("typeBars")
+
+output$typeBars <- renderPlot({plotBars(dfTypeBars(), "type")})
 ```
 
 Row
@@ -152,8 +144,8 @@ Row
 
 ```{r}
 
-output$typeHeatData <- renderTable({dfType()})
-tableOutput("typeHeatData")
+output$typeHeatData <- renderDataTable({dfType()})
+dataTableOutput("typeHeatData")
 ```
 
 Raw Data
@@ -163,14 +155,30 @@ Row
 -----------------------------------------------------------------------
 ### Raw Data
 ```{r}
-output$df <- renderTable(df())
-tableOutput("df")
+output$df <- renderDataTable(df())
+dataTableOutput("df")
 ```
 
 
 ```{r}
+plotHeat <- function(df) {
+  p <- ggplot(data = df, aes(x = hour, y = weekday))
+  p <- p +
+    geom_tile(aes(fill = value), color = "black") +
+    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
+    labs(x="Hour", y="Weekday")
+  return(p)
+}
 
-
+plotBars <- function(df, fillGroup){
+  p <- ggplot(data = df, aes(x = weekday, y = value))
+  p <- p +
+    geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
+    geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
+    scale_fill_discrete(guide = guide_legend(title = "Mode of Interaction")) +
+    labs(x = "Weekday", y = "Number of Interactions")
+  return(p)
+}
 
 calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 
@@ -181,5 +189,7 @@ df <- reactive({
 })
 
 output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
+
+
 
 ```
