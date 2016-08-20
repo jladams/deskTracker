@@ -34,17 +34,38 @@ radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" 
 
 Overview
 =======================================================================
-
-Row
------------------------------------------------------------------------
-### Bars
 ```{r}
+heatData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "weekday", "hour") %>%
+    summarize(value = calc()(value))
+  return(df)
+}
 
+barsData <- function(x) {
+    df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "weekday") %>%
+    summarize(value = calc()(value)) %>%
+    filter(mode != "NA")
+}
 ```
 
 Row
 -----------------------------------------------------------------------
 ### Heatmap
+```{r}
+plotOutput("testHeat")
+
+output$testHeat <- renderPlot({plotBars(barsData("mode"), "mode")})
+```
+
+Row
+-----------------------------------------------------------------------
+### Bars
 
 ```{r}
 
@@ -55,7 +76,7 @@ By Mode of Interaction
 ```{r}
 dfMode <- reactive({
   df <- df() %>%
-    group_by(mode, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    group_by(mode, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
     summarize(value = sum(value)) %>%
     group_by(mode, weekday, hour) %>%
     summarize(value = calc()(value))
@@ -63,7 +84,7 @@ dfMode <- reactive({
 
 dfModeBars <- reactive(  
   df <- df() %>%
-    group_by(mode, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
+    group_by(mode, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
     summarize(value = sum(value)) %>%
     group_by(mode, weekday) %>%
     summarize(value = calc()(value)) %>%
@@ -79,7 +100,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("modeHeat")
 
-output$modeHeat <- renderPlot({plotHeat(dfMode())})
+output$modeHeat <- renderPlot({plotHeat(heatData("mode"))})
 
 ```
 
@@ -87,7 +108,7 @@ output$modeHeat <- renderPlot({plotHeat(dfMode())})
 ```{r}
 plotOutput("modeBars")
 
-output$modeBars <- renderPlot({plotBars(dfModeBars(), "mode")})
+output$modeBars <- renderPlot({plotBars(barsData("mode"), "mode")})
 ```
 
 Row
@@ -95,7 +116,7 @@ Row
 ### Data
 
 ```{r}
-output$modeHeatData <- renderDataTable({dfMode()})
+output$modeHeatData <- renderDataTable({heatData("mode")})
 
 dataTableOutput("modeHeatData")
 ```
@@ -106,7 +127,7 @@ By Type of Interaction
 ```{r}
 dfType <- reactive({
   df <- df() %>%
-    group_by(type, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    group_by(type, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
     summarize(value = sum(value)) %>%
     group_by(type, weekday, hour) %>%
     summarize(value = calc()(value))
@@ -114,7 +135,7 @@ dfType <- reactive({
 
 dfTypeBars <- reactive(  
   df <- df() %>%
-    group_by(type, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
+    group_by(type, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
     summarize(value = sum(value)) %>%
     group_by(type, weekday) %>%
     summarize(value = calc()(value)) %>%
@@ -156,7 +177,7 @@ By Referral
 ```{r}
 dfRef <- reactive({
   df <- df() %>%
-    group_by(referral, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    group_by(referral, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
     summarize(value = sum(value)) %>%
     group_by(referral, weekday, hour) %>%
     summarize(value = calc()(value))
@@ -164,7 +185,7 @@ dfRef <- reactive({
 
 dfRefBars <- reactive(  
   df <- df() %>%
-    group_by(referral, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
+    group_by(referral, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
     summarize(value = sum(value)) %>%
     group_by(referral, weekday) %>%
     summarize(value = calc()(value)) %>%
@@ -237,7 +258,7 @@ calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 
 df <- reactive({
   df <- df1 %>%
-    filter(as.Date(date) >= as.Date(input$dates[1]) & as.Date(date) <= as.Date(input$dates[2])) %>%
+    filter(as.Date(date_time) >= as.Date(input$dates[1]) & as.Date(date_time) <= as.Date(input$dates[2])) %>%
     filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
 })
 
