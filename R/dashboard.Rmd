@@ -25,6 +25,8 @@ checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique
 
 checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())))
 
+checkboxGroupInput("referral", label = h4("Referral"), choices = c(unique(factor(df1$referral) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$referral) %>% na.omit() %>% as.vector())))
+
 checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())))
 
 radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
@@ -148,6 +150,57 @@ output$typeHeatData <- renderDataTable({dfType()})
 dataTableOutput("typeHeatData")
 ```
 
+By Referral
+=======================================================================
+
+```{r}
+dfRef <- reactive({
+  df <- df() %>%
+    group_by(referral, day = as.Date(date), weekday = wday(date, label = TRUE), hour = hour(date)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(referral, weekday, hour) %>%
+    summarize(value = calc()(value))
+})
+
+dfRefBars <- reactive(  
+  df <- df() %>%
+    group_by(referral, day = as_date(date), weekday = wday(date, label = TRUE)) %>%
+    summarize(value = sum(value)) %>%
+    group_by(referral, weekday) %>%
+    summarize(value = calc()(value)) %>%
+    filter(referral != "NA")
+)
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Heatmap
+```{r}
+plotOutput("refHeat")
+
+output$refHeat <- renderPlot({plotHeat(dfRef())})
+
+```
+
+### Bar Chart
+```{r}
+plotOutput("refBars")
+
+output$refBars <- renderPlot({plotBars(dfRefBars(), "referral")})
+```
+
+Row
+-----------------------------------------------------------------------
+### Data
+
+```{r}
+
+output$refHeatData <- renderDataTable({dfRef()})
+dataTableOutput("refHeatData")
+```
+
+
 Raw Data
 =======================================================================
 
@@ -185,7 +238,7 @@ calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 df <- reactive({
   df <- df1 %>%
     filter(as.Date(date) >= as.Date(input$dates[1]) & as.Date(date) <= as.Date(input$dates[2])) %>%
-    filter(mode %in% input$mode & type %in% input$type & term %in% input$term)
+    filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
 })
 
 output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
