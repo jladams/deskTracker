@@ -84,7 +84,7 @@ Row
 ### Data
 
 ```{r}
-output$modeData <- renderDataTable({heatData("mode")})
+output$modeData <- DT::renderDataTable({heatData("mode")})
 
 dataTableOutput("modeData")
 ```
@@ -120,7 +120,7 @@ Row
 
 ```{r}
 
-output$typeHeatData <- renderDataTable({heatData("type")})
+output$typeHeatData <- DT::renderDataTable({heatData("type")})
 dataTableOutput("typeHeatData")
 ```
 
@@ -170,7 +170,7 @@ Row
 
 ```{r}
 
-output$refHeatData <- renderDataTable({heatData("referral")})
+output$refHeatData <- DT::renderDataTable({heatData("referral")})
 dataTableOutput("refHeatData")
 ```
 
