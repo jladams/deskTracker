@@ -35,23 +35,7 @@ radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" 
 Overview
 =======================================================================
 ```{r}
-heatData <- function(x) {
-  df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "weekday", "hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-}
 
-barsData <- function(x) {
-    df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "weekday") %>%
-    summarize(value = calc()(value)) %>%
-    filter(mode != "NA")
-}
 ```
 
 Row
@@ -74,22 +58,6 @@ Row
 By Mode of Interaction
 =======================================================================
 ```{r}
-dfMode <- reactive({
-  df <- df() %>%
-    group_by(mode, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(mode, weekday, hour) %>%
-    summarize(value = calc()(value))
-})
-
-dfModeBars <- reactive(  
-  df <- df() %>%
-    group_by(mode, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(mode, weekday) %>%
-    summarize(value = calc()(value)) %>%
-    filter(mode != "NA")
-)
 
 ```
 
@@ -116,31 +84,16 @@ Row
 ### Data
 
 ```{r}
-output$modeHeatData <- renderDataTable({heatData("mode")})
+output$modeData <- renderDataTable({heatData("mode")})
 
-dataTableOutput("modeHeatData")
+dataTableOutput("modeData")
 ```
 
 By Type of Interaction
 =======================================================================
 
 ```{r}
-dfType <- reactive({
-  df <- df() %>%
-    group_by(type, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(type, weekday, hour) %>%
-    summarize(value = calc()(value))
-})
 
-dfTypeBars <- reactive(  
-  df <- df() %>%
-    group_by(type, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(type, weekday) %>%
-    summarize(value = calc()(value)) %>%
-    filter(type != "NA")
-)
 ```
 
 Row {.tabset .tabset-fade}
@@ -150,7 +103,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("typeHeat")
 
-output$typeHeat <- renderPlot({plotHeat(dfType())})
+output$typeHeat <- renderPlot({plotHeat(heatData("type"))})
 
 ```
 
@@ -158,7 +111,7 @@ output$typeHeat <- renderPlot({plotHeat(dfType())})
 ```{r}
 plotOutput("typeBars")
 
-output$typeBars <- renderPlot({plotBars(dfTypeBars(), "type")})
+output$typeBars <- renderPlot({plotBars(barsData("type"), "type")})
 ```
 
 Row
@@ -167,7 +120,7 @@ Row
 
 ```{r}
 
-output$typeHeatData <- renderDataTable({dfType()})
+output$typeHeatData <- renderDataTable({heatData("type")})
 dataTableOutput("typeHeatData")
 ```
 
@@ -200,7 +153,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("refHeat")
 
-output$refHeat <- renderPlot({plotHeat(dfRef())})
+output$refHeat <- renderPlot({plotHeat(heatData("referral"))})
 
 ```
 
@@ -208,7 +161,7 @@ output$refHeat <- renderPlot({plotHeat(dfRef())})
 ```{r}
 plotOutput("refBars")
 
-output$refBars <- renderPlot({plotBars(dfRefBars(), "referral")})
+output$refBars <- renderPlot({plotBars(barsData("referral"), "referral")})
 ```
 
 Row
@@ -217,7 +170,7 @@ Row
 
 ```{r}
 
-output$refHeatData <- renderDataTable({dfRef()})
+output$refHeatData <- renderDataTable({heatData("referral")})
 dataTableOutput("refHeatData")
 ```
 
@@ -235,6 +188,36 @@ dataTableOutput("df")
 
 
 ```{r}
+
+
+calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
+
+df <- reactive({
+  df <- df1 %>%
+    filter(as.Date(date_time) >= as.Date(input$dates[1]) & as.Date(date_time) <= as.Date(input$dates[2])) %>%
+    filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
+})
+
+output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
+
+heatData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "weekday", "hour") %>%
+    summarize(value = calc()(value))
+  return(df)
+}
+
+barsData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "weekday") %>%
+    summarize(value = calc()(value)) %>%
+    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+}
+
 plotHeat <- function(df) {
   p <- ggplot(data = df, aes(x = hour, y = weekday))
   p <- p +
@@ -253,17 +236,4 @@ plotBars <- function(df, fillGroup){
     labs(x = "Weekday", y = "Number of Interactions")
   return(p)
 }
-
-calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
-
-df <- reactive({
-  df <- df1 %>%
-    filter(as.Date(date_time) >= as.Date(input$dates[1]) & as.Date(date_time) <= as.Date(input$dates[2])) %>%
-    filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
-})
-
-output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
-
-
-
 ```
