@@ -35,14 +35,7 @@ checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(facto
 Overview
 =======================================================================
 ```{r}
-ovLineData <- reactive({
-  df <- df() %>%
-    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_("hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-})
+
 ```
 
 Row {.tabset .tabset-fade}
@@ -66,7 +59,7 @@ output$ovHeatTable <- renderTable({d3HeatData()})
 
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
-### Throughout the Day
+### By Time
 ```{r}
 plotlyOutput("ovLines")
 
@@ -91,7 +84,7 @@ output$ovDayLines <- renderPlotly({
   p <- p +
     geom_line(aes(color = weekday), size = 1) +
     geom_point(aes(color = weekday)) +
-    geom_text(aes(label = round(value, 2), color = weekday), vjust = -1) + 
+    geom_text(aes(label = round(value, 2)), vjust = -1) + 
     scale_color_discrete(guide = guide_legend(title = "Weekday")) +
     labs(x = "Time", y = "Number of Interactions")
   ggplotly(p)
@@ -107,11 +100,11 @@ By Mode of Interaction
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Heatmap
+### By Time
 ```{r}
-plotOutput("modeHeat")
+plotOutput("modeLines")
 
-output$modeHeat <- renderPlot({plotHeat(varData("mode"))})
+output$modeLines <- renderPlot({plotLines(linesData("mode"), "mode")})
 
 ```
 
@@ -127,7 +120,7 @@ Row
 ### Data
 
 ```{r}
-output$modeData <- renderTable({varData("mode")})
+output$modeData <- renderTable({heatData("mode")})
 
 tableOutput("modeData")
 ```
@@ -142,11 +135,11 @@ By Type of Interaction
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Heatmap
+### By Time
 ```{r}
-plotOutput("typeHeat")
+plotOutput("typeLines")
 
-output$typeHeat <- renderPlot({plotHeat(varData("type"))})
+output$typeLines <- renderPlot({plotLines(linesData("type"), "type")})
 
 ```
 
@@ -163,8 +156,8 @@ Row
 
 ```{r}
 
-output$typevarData <- renderTable({varData("type")})
-tableOutput("typevarData")
+output$typeheatData <- renderTable({heatData("type")})
+tableOutput("typeheatData")
 ```
 
 By Referral
@@ -177,11 +170,11 @@ By Referral
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Heatmap
+### By Time
 ```{r}
-plotOutput("refHeat")
+plotOutput("refLines")
 
-output$refHeat <- renderPlot({plotHeat(varData("referral"))})
+output$refLines <- renderPlot({plotLines(linesData("referral"), "referral")})
 
 ```
 
@@ -198,8 +191,8 @@ Row
 
 ```{r}
 
-output$refvarData <- renderTable({varData("referral")})
-tableOutput("refvarData")
+output$refheatData <- renderTable({heatData("referral")})
+tableOutput("refheatData")
 ```
 
 
@@ -228,15 +221,6 @@ df <- reactive({
 
 output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
-ovData <- reactive({
-  df <- df() %>%
-    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_("weekday", "hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-})
-
 d3HeatData <- reactive({
   df <- ovData() %>%
     spread(hour, value)
@@ -246,7 +230,36 @@ d3HeatData <- reactive({
   return(df)
 })
 
-varData <- function(x) {
+ovLineData <- reactive({
+  df <- df() %>%
+    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_("hour") %>%
+    summarize(value = calc()(value))
+  return(df)
+})
+
+ovData <- reactive({
+  df <- df() %>%
+    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_("weekday", "hour") %>%
+    summarize(value = calc()(value))
+  return(df)
+})
+
+linesData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x,"hour") %>%
+    summarize(value = calc()(value)) %>%
+    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+  return(df)
+}
+
+
+heatData <- function(x) {
   df <- df() %>%
     group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
     summarize(value = sum(value)) %>%
@@ -261,7 +274,7 @@ plotLines <- function(df, lineColor) {
     geom_line(aes_string(color = lineColor)) +
     geom_text(aes_string(label = quote(round(value, 2)))) + 
     scale_color_discrete(guide = guide_legend(title = paste(lineColor, "of Interaction"))) +
-    labs(x = "Weekday", y = "Number of Interactions")
+    labs(x = "Time", y = "Number of Interactions")
   return(p)
 }
 
@@ -283,8 +296,6 @@ plotBars <- function(df, fillGroup){
     labs(x = "Weekday", y = "Number of Interactions")
   return(p)
 }
-
-
 
 plotHeat <- function(df) {
   p <- ggplot(data = df, aes(x = hour, y = weekday))
