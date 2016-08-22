@@ -10,44 +10,44 @@ library(d3heatmap)
 
 getTerms <- function(date_time){
   ifelse(
-    as_date(date_time) %in% lubridate::ymd(20090625):lubridate::ymd(20090901) |
-      as_date(date_time) %in% lubridate::ymd(20100624):lubridate::ymd(20100831) |
-      as_date(date_time) %in% lubridate::ymd(20110623):lubridate::ymd(20110830) |
-      as_date(date_time) %in% lubridate::ymd(20120621):lubridate::ymd(20120828) |
-      as_date(date_time) %in% lubridate::ymd(20130620):lubridate::ymd(20130827) |
-      as_date(date_time) %in% lubridate::ymd(20140619):lubridate::ymd(20140826) |
-      as_date(date_time) %in% lubridate::ymd(20150625):lubridate::ymd(20150901) |
-      as_date(date_time) %in% lubridate::ymd(20160623):lubridate::ymd(20160830),
+    ymd(as_date(date_time)) %in% lubridate::ymd(20090625):lubridate::ymd(20090901) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20100624):lubridate::ymd(20100831) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20110623):lubridate::ymd(20110830) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20120621):lubridate::ymd(20120828) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20130620):lubridate::ymd(20130827) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20140619):lubridate::ymd(20140826) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20150625):lubridate::ymd(20150901) |
+      ymd(as_date(date_time)) %in% lubridate::ymd(20160623):lubridate::ymd(20160830),
     "Summer",
     ifelse(
-      as_date(date_time) %in% lubridate::ymd(20090923):lubridate::ymd(20091209) |
-        as_date(date_time) %in% lubridate::ymd(20100922):lubridate::ymd(20101208) |
-        as_date(date_time) %in% lubridate::ymd(20110921):lubridate::ymd(20111207) |
-        as_date(date_time) %in% lubridate::ymd(20120910):lubridate::ymd(20121121) |
-        as_date(date_time) %in% lubridate::ymd(20130916):lubridate::ymd(20131127) |
-        as_date(date_time) %in% lubridate::ymd(20140915):lubridate::ymd(20151126) |
-        as_date(date_time) %in% lubridate::ymd(20150916):lubridate::ymd(20151125) |
-        as_date(date_time) %in% lubridate::ymd(20160912):lubridate::ymd(20161123),
+      ymd(as_date(date_time)) %in% lubridate::ymd(20090923):lubridate::ymd(20091209) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20100922):lubridate::ymd(20101208) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20110921):lubridate::ymd(20111207) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20120910):lubridate::ymd(20121121) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20130916):lubridate::ymd(20131127) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20140915):lubridate::ymd(20141126) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20150916):lubridate::ymd(20151125) |
+        ymd(as_date(date_time)) %in% lubridate::ymd(20160912):lubridate::ymd(20161123),
       "Fall",
       ifelse(
-        as_date(date_time) %in% lubridate::ymd(20100104):lubridate::ymd(20100316) |
-          as_date(date_time) %in% lubridate::ymd(20110104):lubridate::ymd(20110316) |
-          as_date(date_time) %in% lubridate::ymd(20120104):lubridate::ymd(20120314) |
-          as_date(date_time) %in% lubridate::ymd(20130107):lubridate::ymd(20130325) |
-          as_date(date_time) %in% lubridate::ymd(20140106):lubridate::ymd(20140314) |
-          as_date(date_time) %in% lubridate::ymd(20150105):lubridate::ymd(20150317) |
-          as_date(date_time) %in% lubridate::ymd(20160104):lubridate::ymd(20160315) |
-          as_date(date_time) %in% lubridate::ymd(20170104):lubridate::ymd(20170315),
+        ymd(as_date(date_time)) %in% lubridate::ymd(20100104):lubridate::ymd(20100316) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20110104):lubridate::ymd(20110316) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20120104):lubridate::ymd(20120314) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20130107):lubridate::ymd(20130325) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20140106):lubridate::ymd(20140314) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20150105):lubridate::ymd(20150317) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20160104):lubridate::ymd(20160315) |
+          ymd(as_date(date_time)) %in% lubridate::ymd(20170104):lubridate::ymd(20170315),
         "Winter",
         ifelse(
-          as_date(date_time) %in% lubridate::ymd(20100329):lubridate::ymd(20100613) |
-            as_date(date_time) %in% lubridate::ymd(20110328):lubridate::ymd(20110612) |
-            as_date(date_time) %in% lubridate::ymd(20120326):lubridate::ymd(20120610) |
-            as_date(date_time) %in% lubridate::ymd(20130325):lubridate::ymd(20130609) |
-            as_date(date_time) %in% lubridate::ymd(20140324):lubridate::ymd(20140608) |
-            as_date(date_time) %in% lubridate::ymd(20150330):lubridate::ymd(20150614) |
-            as_date(date_time) %in% lubridate::ymd(20160328):lubridate::ymd(20160612) |
-            as_date(date_time) %in% lubridate::ymd(20170327):lubridate::ymd(20170611),
+          ymd(as_date(date_time)) %in% lubridate::ymd(20100329):lubridate::ymd(20100613) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20110328):lubridate::ymd(20110612) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20120326):lubridate::ymd(20120610) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20130325):lubridate::ymd(20130609) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20140324):lubridate::ymd(20140608) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20150330):lubridate::ymd(20150614) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20160328):lubridate::ymd(20160612) |
+            ymd(as_date(date_time)) %in% lubridate::ymd(20170327):lubridate::ymd(20170611),
           "Spring",
           "Intersession"
         )
@@ -60,7 +60,7 @@ getTerms <- function(date_time){
 
 raw <- read.csv("../data/deskTracker.csv", stringsAsFactors = FALSE)
 raw <- raw %>%
-  mutate(date_time = as.POSIXct(floor_date(ymd_hms(raw$date_time), "hour"))) %>%
+  mutate(date_time = as.character.Date(floor_date(ymd_hms(raw$date_time), "hour"))) %>%
   select(response_set, date_time, question, response) %>%
   spread(question, response)
 

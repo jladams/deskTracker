@@ -20,6 +20,7 @@ Sidebar {.sidebar}
 ```{r}
 dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Date())
 textOutput("dateValidate")
+output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
 selectInput("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
 
@@ -112,7 +113,28 @@ output$modeLines <- renderPlot({plotLines(linesData("mode"), "mode")})
 ```{r}
 plotOutput("modeBars")
 
-output$modeBars <- renderPlot({plotBars(barsData("mode"), "mode")})
+output$modeBars <- renderPlot({plotBars(wdayData("mode"), "mode", "weekday")})
+```
+
+### By Month
+```{r}
+plotOutput("modeMonth")
+
+output$modeMonth <- renderPlot({plotBars(monthData("mode"), "mode", "month")})
+```
+
+### By Term
+```{r}
+plotOutput("modeTerm")
+
+output$modeTerm <- renderPlot({plotBars(termData("mode"), "mode", "term")})
+```
+
+### By Year
+```{r}
+plotOutput("modeYear")
+
+output$modeYear <- renderPlot({plotBars(yearData("mode"), "mode", "year")})
 ```
 
 Row
@@ -147,7 +169,28 @@ output$typeLines <- renderPlot({plotLines(linesData("type"), "type")})
 ```{r}
 plotOutput("typeBars")
 
-output$typeBars <- renderPlot({plotBars(barsData("type"), "type")})
+output$typeBars <- renderPlot({plotBars(wdayData("type"), "type", "weekday")})
+```
+
+### By Month
+```{r}
+plotOutput("typeMonth")
+
+output$typeMonth <- renderPlot({plotBars(monthData("type"), "type", "month")})
+```
+
+### By Term
+```{r}
+plotOutput("typeTerm")
+
+output$typeTerm <- renderPlot({plotBars(termData("type"), "type", "term")})
+```
+
+### By Year
+```{r}
+plotOutput("typeYear")
+
+output$typeYear <- renderPlot({plotBars(yearData("type"), "type", "year")})
 ```
 
 Row
@@ -182,7 +225,28 @@ output$refLines <- renderPlot({plotLines(linesData("referral"), "referral")})
 ```{r}
 plotOutput("refBars")
 
-output$refBars <- renderPlot({plotBars(barsData("referral"), "referral")})
+output$refBars <- renderPlot({plotBars(wdayData("referral"), "referral", "weekday")})
+```
+
+### By Month
+```{r}
+plotOutput("refMonth")
+
+output$refMonth <- renderPlot({plotBars(monthData("referral"), "referral", "month")})
+```
+
+### By Term
+```{r}
+plotOutput("refTerm")
+
+output$refTerm <- renderPlot({plotBars(termData("referral"), "referral", "term")})
+```
+
+### By Year
+```{r}
+plotOutput("refYear")
+
+output$refYear <- renderPlot({plotBars(yearData("referral"), "referral", "year")})
 ```
 
 Row
@@ -219,7 +283,6 @@ df <- reactive({
     filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
 })
 
-output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
 d3HeatData <- reactive({
   df <- ovData() %>%
@@ -258,7 +321,6 @@ linesData <- function(x) {
   return(df)
 }
 
-
 heatData <- function(x) {
   df <- df() %>%
     group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
@@ -273,12 +335,12 @@ plotLines <- function(df, lineColor) {
   p <- p +
     geom_line(aes_string(color = lineColor)) +
     geom_text(aes_string(label = quote(round(value, 2)))) + 
-    scale_color_discrete(guide = guide_legend(title = paste(lineColor, "of Interaction"))) +
+    scale_color_discrete(guide = guide_legend(title = paste(stringr::str_to_title(lineColor), "of Interaction"))) +
     labs(x = "Time", y = "Number of Interactions")
   return(p)
 }
 
-barsData <- function(x) {
+wdayData <- function(x) {
   df <- df() %>%
     group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
     summarize(value = sum(value)) %>%
@@ -287,13 +349,40 @@ barsData <- function(x) {
     filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
 }
 
-plotBars <- function(df, fillGroup){
-  p <- ggplot(data = df, aes(x = weekday, y = value))
+monthData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "month") %>%
+    summarize(value = calc()(value)) %>%
+    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+}
+
+termData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", "term") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "term") %>%
+    summarize(value = calc()(value)) %>%
+    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+}
+
+yearData <- function(x) {
+  df <- df() %>%
+    group_by_(x, day = "as.Date(date_time)", year = "lubridate::year(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_(x, "year") %>%
+    summarize(value = calc()(value)) %>%
+    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+}
+
+plotBars <- function(df, fillGroup, timeFrame){
+  p <- ggplot(data = df, aes_string(x = timeFrame, y = "value"))
   p <- p +
     geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
     geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
-    scale_fill_discrete(guide = guide_legend(title = paste(fillGroup, "of Interaction"))) +
-    labs(x = "Weekday", y = "Number of Interactions")
+    scale_fill_discrete(guide = guide_legend(title = paste(stringr::str_to_title(fillGroup), "of Interaction"))) +
+    labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
   return(p)
 }
 
