@@ -65,7 +65,8 @@ raw <- raw %>%
 
 raw <- raw %>%
   mutate(value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date_time))) %>%
-  select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
+  select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value) %>%
+  replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
 
 df1 <- raw %>%
   select(id, date_time, mode, type, referral, term, value)

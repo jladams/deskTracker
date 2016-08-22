@@ -248,7 +248,7 @@ plotBars <- function(df, fillGroup){
   p <- p +
     geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
     geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
-    scale_fill_discrete(guide = guide_legend(title = "Mode of Interaction")) +
+    scale_fill_discrete(guide = guide_legend(title = paste(fillGroup, "of Interaction"))) +
     labs(x = "Weekday", y = "Number of Interactions")
   return(p)
 }
