@@ -21,15 +21,15 @@ Sidebar {.sidebar}
 dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Date())
 textOutput("dateValidate")
 
-checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique(factor(df1$mode) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$mode) %>% na.omit() %>% as.vector())))
+selectInput("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
 
-checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$type) %>% na.omit() %>% as.vector())))
+checkboxGroupInput("mode", label = h4("Mode of Interaction"), choices = c(unique(factor(df1$mode) %>% as.vector())), selected = c(unique(factor(df1$mode) %>% as.vector())))
 
-checkboxGroupInput("referral", label = h4("Referral"), choices = c(unique(factor(df1$referral) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$referral) %>% na.omit() %>% as.vector())))
+checkboxGroupInput("type", label = h4("Type of Interaction"), choices = c(unique(factor(df1$type) %>% as.vector())), selected = c(unique(factor(df1$type) %>% as.vector())))
 
-checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())), selected = c(unique(factor(df1$term) %>% na.omit() %>% as.vector())))
+checkboxGroupInput("referral", label = h4("Referral"), choices = c(unique(factor(df1$referral) %>% as.vector())), selected = c(unique(factor(df1$referral) %>% as.vector())))
 
-radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
+checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(factor(df1$term) %>% as.vector())), selected = c(unique(factor(df1$term) %>% as.vector())))
 ```
 
 Overview
@@ -49,16 +49,23 @@ d3HeatData <- reactive({
 })
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
-### Heatmap
+### Day and Time
 ```{r}
 
 d3heatmapOutput("ovHeat")
 
 output$ovHeat <- renderD3heatmap({
-  d3heatmap(d3HeatData(), Rowv = FALSE, Colv = FALSE, col = c("steelblue", "forestgreen"), show_grid = 5)
+  d3heatmap(d3HeatData(), Rowv = FALSE, Colv = FALSE, col = c("steelblue", "firebrick"), show_grid = 5)
 })
+```
+
+### Heatmap Data
+```{r}
+tableOutput("ovHeatTable") 
+
+output$ovHeatTable <- renderTable({d3HeatData()})
 ```
 
 Row
@@ -66,9 +73,7 @@ Row
 ### Bars
 
 ```{r}
-tableOutput("testTable") 
 
-output$testTable <- renderTable({d3HeatData()})
 ```
 
 By Mode of Interaction
@@ -88,7 +93,7 @@ output$modeHeat <- renderPlot({plotHeat(heatData("mode"))})
 
 ```
 
-### Bar Chart
+### By Weekday
 ```{r}
 plotOutput("modeBars")
 
@@ -100,9 +105,9 @@ Row
 ### Data
 
 ```{r}
-output$modeData <- DT::renderDataTable({heatData("mode")})
+output$modeData <- renderTable({heatData("mode")})
 
-dataTableOutput("modeData")
+tableOutput("modeData")
 ```
 
 By Type of Interaction
@@ -123,7 +128,7 @@ output$typeHeat <- renderPlot({plotHeat(heatData("type"))})
 
 ```
 
-### Bar Chart
+### By Weekday
 ```{r}
 plotOutput("typeBars")
 
@@ -136,8 +141,8 @@ Row
 
 ```{r}
 
-output$typeHeatData <- DT::renderDataTable({heatData("type")})
-dataTableOutput("typeHeatData")
+output$typeHeatData <- renderTable({heatData("type")})
+tableOutput("typeHeatData")
 ```
 
 By Referral
@@ -173,7 +178,7 @@ output$refHeat <- renderPlot({plotHeat(heatData("referral"))})
 
 ```
 
-### Bar Chart
+### By Weekday
 ```{r}
 plotOutput("refBars")
 
@@ -186,8 +191,8 @@ Row
 
 ```{r}
 
-output$refHeatData <- DT::renderDataTable({heatData("referral")})
-dataTableOutput("refHeatData")
+output$refHeatData <- renderTable({heatData("referral")})
+tableOutput("refHeatData")
 ```
 
 
@@ -198,8 +203,8 @@ Row
 -----------------------------------------------------------------------
 ### Raw Data
 ```{r}
-output$df <- renderDataTable(df())
-dataTableOutput("df")
+output$df <- renderTable(df())
+tableOutput("df")
 ```
 
 
