@@ -35,16 +35,12 @@ checkboxGroupInput("term", label = h4("Academic Term"), choices = c(unique(facto
 Overview
 =======================================================================
 ```{r}
-d3HeatData <- reactive({
+ovLineData <- reactive({
   df <- df() %>%
     group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
     summarize(value = sum(value)) %>%
-    group_by_("weekday", "hour") %>%
-    summarize(value = calc()(value)) %>%
-    spread(hour, value)
-  row.names(df) <- as.character(as.factor(df$weekday))
-  df <- data.matrix(df)
-  df <- df[,2:ncol(df)]
+    group_by_("hour") %>%
+    summarize(value = calc()(value))
   return(df)
 })
 ```
@@ -57,7 +53,7 @@ Row {.tabset .tabset-fade}
 d3heatmapOutput("ovHeat")
 
 output$ovHeat <- renderD3heatmap({
-  d3heatmap(d3HeatData(), Rowv = FALSE, Colv = FALSE, col = c("steelblue", "firebrick"), show_grid = 5)
+  d3heatmap(d3HeatData(), Rowv = FALSE, Colv = FALSE, col = c("#60e9dc", "#2f4b4e"), show_grid = 5)
 })
 ```
 
@@ -68,12 +64,38 @@ tableOutput("ovHeatTable")
 output$ovHeatTable <- renderTable({d3HeatData()})
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
-### Bars
-
+### Throughout the Day
 ```{r}
+plotlyOutput("ovLines")
 
+output$ovLines <- renderPlotly({
+  p <- ggplot(data = ovLineData(), aes(x = hour, y = value))
+  p <- p +
+    geom_line(size = 1) +
+    geom_point() +
+#    geom_text(aes(label = round(value, 2)), vjust = -1) + 
+    guides(color = "none") + 
+    labs(x = "Time", y = "Number of Interactions")
+  ggplotly(p)
+})
+```
+
+### By Weekday
+```{r}
+plotlyOutput("ovDayLines")
+
+output$ovDayLines <- renderPlotly({
+  p <- ggplot(data = ovData(), aes(x = hour, y = value))
+  p <- p +
+    geom_line(aes(color = weekday), size = 1) +
+    geom_point(aes(color = weekday)) +
+    geom_text(aes(label = round(value, 2), color = weekday), vjust = -1) + 
+    scale_color_discrete(guide = guide_legend(title = "Weekday")) +
+    labs(x = "Time", y = "Number of Interactions")
+  ggplotly(p)
+})
 ```
 
 By Mode of Interaction
@@ -89,7 +111,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("modeHeat")
 
-output$modeHeat <- renderPlot({plotHeat(heatData("mode"))})
+output$modeHeat <- renderPlot({plotHeat(varData("mode"))})
 
 ```
 
@@ -105,7 +127,7 @@ Row
 ### Data
 
 ```{r}
-output$modeData <- renderTable({heatData("mode")})
+output$modeData <- renderTable({varData("mode")})
 
 tableOutput("modeData")
 ```
@@ -124,7 +146,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("typeHeat")
 
-output$typeHeat <- renderPlot({plotHeat(heatData("type"))})
+output$typeHeat <- renderPlot({plotHeat(varData("type"))})
 
 ```
 
@@ -141,30 +163,15 @@ Row
 
 ```{r}
 
-output$typeHeatData <- renderTable({heatData("type")})
-tableOutput("typeHeatData")
+output$typevarData <- renderTable({varData("type")})
+tableOutput("typevarData")
 ```
 
 By Referral
 =======================================================================
 
 ```{r}
-dfRef <- reactive({
-  df <- df() %>%
-    group_by(referral, day = as.Date(date_time), weekday = wday(date_time, label = TRUE), hour = hour(date_time)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(referral, weekday, hour) %>%
-    summarize(value = calc()(value))
-})
 
-dfRefBars <- reactive(  
-  df <- df() %>%
-    group_by(referral, day = as_date(date_time), weekday = wday(date_time, label = TRUE)) %>%
-    summarize(value = sum(value)) %>%
-    group_by(referral, weekday) %>%
-    summarize(value = calc()(value)) %>%
-    filter(referral != "NA")
-)
 ```
 
 Row {.tabset .tabset-fade}
@@ -174,7 +181,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotOutput("refHeat")
 
-output$refHeat <- renderPlot({plotHeat(heatData("referral"))})
+output$refHeat <- renderPlot({plotHeat(varData("referral"))})
 
 ```
 
@@ -191,8 +198,8 @@ Row
 
 ```{r}
 
-output$refHeatData <- renderTable({heatData("referral")})
-tableOutput("refHeatData")
+output$refvarData <- renderTable({varData("referral")})
+tableOutput("refvarData")
 ```
 
 
@@ -221,13 +228,41 @@ df <- reactive({
 
 output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
-heatData <- function(x) {
+ovData <- reactive({
+  df <- df() %>%
+    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_("weekday", "hour") %>%
+    summarize(value = calc()(value))
+  return(df)
+})
+
+d3HeatData <- reactive({
+  df <- ovData() %>%
+    spread(hour, value)
+  row.names(df) <- as.character(as.factor(df$weekday))
+  df <- data.matrix(df)
+  df <- df[,2:ncol(df)]
+  return(df)
+})
+
+varData <- function(x) {
   df <- df() %>%
     group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
     summarize(value = sum(value)) %>%
     group_by_(x, "weekday", "hour") %>%
     summarize(value = calc()(value))
   return(df)
+}
+
+plotLines <- function(df, lineColor) {
+  p <- ggplot(data = df, aes(x = hour, y = value))
+  p <- p +
+    geom_line(aes_string(color = lineColor)) +
+    geom_text(aes_string(label = quote(round(value, 2)))) + 
+    scale_color_discrete(guide = guide_legend(title = paste(lineColor, "of Interaction"))) +
+    labs(x = "Weekday", y = "Number of Interactions")
+  return(p)
 }
 
 barsData <- function(x) {
@@ -239,15 +274,6 @@ barsData <- function(x) {
     filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
 }
 
-plotHeat <- function(df) {
-  p <- ggplot(data = df, aes(x = hour, y = weekday))
-  p <- p +
-    geom_tile(aes(fill = value), color = "black") +
-    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
-    labs(x="Hour", y="Weekday")
-  return(p)
-}
-
 plotBars <- function(df, fillGroup){
   p <- ggplot(data = df, aes(x = weekday, y = value))
   p <- p +
@@ -257,4 +283,16 @@ plotBars <- function(df, fillGroup){
     labs(x = "Weekday", y = "Number of Interactions")
   return(p)
 }
+
+
+
+plotHeat <- function(df) {
+  p <- ggplot(data = df, aes(x = hour, y = weekday))
+  p <- p +
+    geom_tile(aes(fill = value), color = "black") +
+    scale_fill_gradient(low="white", high="steelblue", guide=guide_colorbar(title=expression(paste("Number of Interactions")))) +
+    labs(x="Hour", y="Weekday")
+  return(p)
+}
+
 ```
