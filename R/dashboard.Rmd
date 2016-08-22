@@ -35,16 +35,30 @@ radioButtons("calculation", label = h4("Calculation to Use"), choices = c("Sum" 
 Overview
 =======================================================================
 ```{r}
-
+d3HeatData <- reactive({
+  df <- df() %>%
+    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    summarize(value = sum(value)) %>%
+    group_by_("weekday", "hour") %>%
+    summarize(value = calc()(value)) %>%
+    spread(hour, value)
+  row.names(df) <- as.character(as.factor(df$weekday))
+  df <- data.matrix(df)
+  df <- df[,2:ncol(df)]
+  return(df)
+})
 ```
 
 Row
 -----------------------------------------------------------------------
 ### Heatmap
 ```{r}
-plotOutput("testHeat")
 
-output$testHeat <- renderPlot({plotBars(barsData("mode"), "mode")})
+d3heatmapOutput("ovHeat")
+
+output$ovHeat <- renderD3heatmap({
+  d3heatmap(d3HeatData(), Rowv = FALSE, Colv = FALSE, col = c("steelblue", "forestgreen"), show_grid = 5)
+})
 ```
 
 Row
@@ -52,7 +66,9 @@ Row
 ### Bars
 
 ```{r}
+tableOutput("testTable") 
 
+output$testTable <- renderTable({d3HeatData()})
 ```
 
 By Mode of Interaction

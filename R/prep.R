@@ -55,8 +55,7 @@ getTerms <- function(date_time){
   )
 }
 
-ts <- seq.POSIXt(as.POSIXct("2009-06-25 0:00"), as.POSIXct("2016-08-17 23:59"), by = "hour")
-ts <- data.frame(date_time = ts)
+
 
 raw <- read.csv("../data/deskTracker.csv", stringsAsFactors = FALSE)
 raw <- raw %>%
@@ -64,13 +63,18 @@ raw <- raw %>%
   select(response_set, date_time, question, response) %>%
   spread(question, response)
 
-raw <- full_join(ts, raw)
 raw <- raw %>%
-  mutate(id = response_set, value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date_time))) %>%
-  replace_na(replace = list(`*Type of Communication` = "NA", `*Type of Transaction` = "NA", `Referral to:` = "NA")) %>%
-  select(id, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
-
+  mutate(value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date_time))) %>%
+  select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
 
 df1 <- raw %>%
   select(id, date_time, mode, type, referral, term, value)
-  
+
+# ts <- seq.POSIXt(as.POSIXct("2009-06-25 0:00"), as.POSIXct("2016-08-17 23:59"), by = "hour")
+# ts <- data.frame(date_time = ts)
+
+# raw <- full_join(ts, raw)
+# raw <- raw %>%
+#   mutate(id = response_set, value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date_time))) %>%
+#   replace_na(replace = list(`*Type of Communication` = "NA", `*Type of Transaction` = "NA", `Referral to:` = "NA")) %>%
+#   select(id, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
