@@ -1,6 +1,5 @@
 library(dplyr)
 library(plotly)
-library(ggiraph)
 library(tidyr)
 library(lubridate)
 library(shiny)
