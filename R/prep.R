@@ -57,7 +57,7 @@ getTerms <- function(date_time){
 
 
 
-raw <- read.csv("../data/deskTracker.csv", stringsAsFactors = FALSE)
+raw <- read.csv("./data/deskTracker.csv", stringsAsFactors = FALSE)
 raw <- raw %>%
   mutate(date_time = as.character.Date(floor_date(ymd_hms(raw$date_time), "hour"))) %>%
   select(response_set, date_time, question, response) %>%

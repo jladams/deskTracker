@@ -4,12 +4,14 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: fill
-    style: styles.css 
+    logo: "images/treeWhite.png"
+    includes:
+      in_header: "www/styles.css"
 runtime: shiny
 ---
 
 ```{r}
-source("../R/prep.R")
+source("./R/prep.R")
 ```
 
 Sidebar {.sidebar}
