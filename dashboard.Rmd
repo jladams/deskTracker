@@ -71,7 +71,6 @@ output$ovLines <- renderPlotly({
   p <- p +
     geom_line(size = 1) +
     geom_point() +
-#    geom_text(aes(label = round(value, 2)), vjust = -1) + 
     guides(color = "none") + 
     labs(x = "Time", y = "Number of Interactions")
   ggplotly(p)
@@ -87,7 +86,6 @@ output$ovDayLines <- renderPlotly({
   p <- p +
     geom_line(aes(color = weekday), size = 1) +
     geom_point(aes(color = weekday)) +
-    geom_text(aes(label = round(value, 2)), vjust = -1) + 
     scale_color_discrete(guide = guide_legend(title = "Weekday")) +
     labs(x = "Time", y = "Number of Interactions")
   ggplotly(p)
@@ -105,38 +103,38 @@ Row {.tabset .tabset-fade}
 
 ### By Time
 ```{r}
-plotOutput("modeLines")
+plotlyOutput("modeLines")
 
-output$modeLines <- renderPlot({plotLines(linesData("mode"), "mode")})
+output$modeLines <- renderPlotly({plotLines(linesData("mode"), "mode")})
 
 ```
 
 ### By Weekday
 ```{r}
-plotOutput("modeBars")
+plotlyOutput("modeBars")
 
-output$modeBars <- renderPlot({plotBars(wdayData("mode"), "mode", "weekday")})
+output$modeBars <- renderPlotly({plotBars(wdayData("mode"), "mode", "weekday")})
 ```
 
 ### By Month
 ```{r}
-plotOutput("modeMonth")
+plotlyOutput("modeMonth")
 
-output$modeMonth <- renderPlot({plotBars(monthData("mode"), "mode", "month")})
+output$modeMonth <- renderPlotly({plotBars(monthData("mode"), "mode", "month")})
 ```
 
 ### By Term
 ```{r}
-plotOutput("modeTerm")
+plotlyOutput("modeTerm")
 
-output$modeTerm <- renderPlot({plotBars(termData("mode"), "mode", "term")})
+output$modeTerm <- renderPlotly({plotBars(termData("mode"), "mode", "term")})
 ```
 
 ### By Year
 ```{r}
-plotOutput("modeYear")
+plotlyOutput("modeYear")
 
-output$modeYear <- renderPlot({plotBars(yearData("mode"), "mode", "year")})
+output$modeYear <- renderPlotly({plotBars(yearData("mode"), "mode", "year")})
 ```
 
 Row
@@ -161,38 +159,38 @@ Row {.tabset .tabset-fade}
 
 ### By Time
 ```{r}
-plotOutput("typeLines")
+plotlyOutput("typeLines")
 
-output$typeLines <- renderPlot({plotLines(linesData("type"), "type")})
+output$typeLines <- renderPlotly({plotLines(linesData("type"), "type")})
 
 ```
 
 ### By Weekday
 ```{r}
-plotOutput("typeBars")
+plotlyOutput("typeBars")
 
-output$typeBars <- renderPlot({plotBars(wdayData("type"), "type", "weekday")})
+output$typeBars <- renderPlotly({plotBars(wdayData("type"), "type", "weekday")})
 ```
 
 ### By Month
 ```{r}
-plotOutput("typeMonth")
+plotlyOutput("typeMonth")
 
-output$typeMonth <- renderPlot({plotBars(monthData("type"), "type", "month")})
+output$typeMonth <- renderPlotly({plotBars(monthData("type"), "type", "month")})
 ```
 
 ### By Term
 ```{r}
-plotOutput("typeTerm")
+plotlyOutput("typeTerm")
 
-output$typeTerm <- renderPlot({plotBars(termData("type"), "type", "term")})
+output$typeTerm <- renderPlotly({plotBars(termData("type"), "type", "term")})
 ```
 
 ### By Year
 ```{r}
-plotOutput("typeYear")
+plotlyOutput("typeYear")
 
-output$typeYear <- renderPlot({plotBars(yearData("type"), "type", "year")})
+output$typeYear <- renderPlotly({plotBars(yearData("type"), "type", "year")})
 ```
 
 Row
@@ -217,38 +215,38 @@ Row {.tabset .tabset-fade}
 
 ### By Time
 ```{r}
-plotOutput("refLines")
+plotlyOutput("refLines")
 
-output$refLines <- renderPlot({plotLines(linesData("referral"), "referral")})
+output$refLines <- renderPlotly({plotLines(linesData("referral"), "referral")})
 
 ```
 
 ### By Weekday
 ```{r}
-plotOutput("refBars")
+plotlyOutput("refBars")
 
-output$refBars <- renderPlot({plotBars(wdayData("referral"), "referral", "weekday")})
+output$refBars <- renderPlotly({plotBars(wdayData("referral"), "referral", "weekday")})
 ```
 
 ### By Month
 ```{r}
-plotOutput("refMonth")
+plotlyOutput("refMonth")
 
-output$refMonth <- renderPlot({plotBars(monthData("referral"), "referral", "month")})
+output$refMonth <- renderPlotly({plotBars(monthData("referral"), "referral", "month")})
 ```
 
 ### By Term
 ```{r}
-plotOutput("refTerm")
+plotlyOutput("refTerm")
 
-output$refTerm <- renderPlot({plotBars(termData("referral"), "referral", "term")})
+output$refTerm <- renderPlotly({plotBars(termData("referral"), "referral", "term")})
 ```
 
 ### By Year
 ```{r}
-plotOutput("refYear")
+plotlyOutput("refYear")
 
-output$refYear <- renderPlot({plotBars(yearData("referral"), "referral", "year")})
+output$refYear <- renderPlotly({plotBars(yearData("referral"), "referral", "year")})
 ```
 
 Row
@@ -336,10 +334,10 @@ plotLines <- function(df, lineColor) {
   p <- ggplot(data = df, aes(x = hour, y = value))
   p <- p +
     geom_line(aes_string(color = lineColor)) +
-    geom_text(aes_string(label = quote(round(value, 2)))) + 
-    scale_color_discrete(guide = guide_legend(title = paste(stringr::str_to_title(lineColor), "of Interaction"))) +
+#    geom_text(aes_string(label = quote(round(value, 2)))) + 
+    scale_color_discrete(guide = guide_legend(title = stringr::str_to_title(lineColor))) +
     labs(x = "Time", y = "Number of Interactions")
-  return(p)
+  ggplotly(p)
 }
 
 wdayData <- function(x) {
@@ -376,6 +374,8 @@ yearData <- function(x) {
     group_by_(x, "year") %>%
     summarize(value = calc()(value)) %>%
     filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+  df$year <- as.factor(df$year)
+  return(df)
 }
 
 plotBars <- function(df, fillGroup, timeFrame){
@@ -383,9 +383,9 @@ plotBars <- function(df, fillGroup, timeFrame){
   p <- p +
     geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
     geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
-    scale_fill_discrete(guide = guide_legend(title = paste(stringr::str_to_title(fillGroup), "of Interaction"))) +
+    scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup))) +
     labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
-  return(p)
+  ggplotly(p)
 }
 
 plotHeat <- function(df) {
