@@ -5,6 +5,7 @@ output:
     orientation: rows
     vertical_layout: fill
     logo: "images/treeWhite.png"
+    favicon: "images/favicon.png"
     includes:
       in_header: "www/styles.css"
 runtime: shiny
