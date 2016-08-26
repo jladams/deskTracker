@@ -8,6 +8,8 @@ library(flexdashboard)
 library(ggplot2)
 library(d3heatmap)
 
+pdf(NULL)
+
 getTerms <- function(date_time){
   ifelse(
     ymd(as_date(date_time)) %in% lubridate::ymd(20090625):lubridate::ymd(20090901) |
