@@ -1,12 +1,15 @@
-library(dplyr)
-library(plotly)
-library(tidyr)
-library(lubridate)
-library(stringr)
-library(shiny)
-library(flexdashboard)
-library(ggplot2)
-library(d3heatmap)
+
+
+pkgs <- c("dplyr", "plotly", "tidyr", "lubridate", "stringr", "shiny", "flexdashboard", "ggplot2", "d3heatmap")
+
+toInstall <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+if(length(toInstall)) { install.packages(toInstall) }
+lapply(pkgs, require, character.only = TRUE)
+
+if(!("sumar" %in% installed.packages())) { devtools::install_github("jladams/sumar")}
+library("sumar")
+
+
 
 pdf(NULL)
 
@@ -73,6 +76,9 @@ raw <- raw %>%
 
 df1 <- raw %>%
   select(id, date_time, mode, type, referral, term, value)
+
+
+
 
 # ts <- seq.POSIXt(as.POSIXct("2009-06-25 0:00"), as.POSIXct("2016-08-17 23:59"), by = "hour")
 # ts <- data.frame(date_time = ts)
