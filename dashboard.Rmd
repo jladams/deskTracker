@@ -114,28 +114,28 @@ output$modeLines <- renderPlotly({plotLines(linesData("mode"), "mode")})
 ```{r}
 plotlyOutput("modeBars")
 
-output$modeBars <- renderPlotly({plotBars(wdayData("mode"), "mode", "weekday")})
+output$modeBars <- renderPlotly({plotBars(timeData("mode", timeFrame = "weekday"), fillGroup = "mode", timeFrame = "weekday")})
 ```
 
 ### By Month
 ```{r}
 plotlyOutput("modeMonth")
 
-output$modeMonth <- renderPlotly({plotBars(monthData("mode"), "mode", "month")})
+output$modeMonth <- renderPlotly({plotBars(timeData("mode", timeFrame = "month"), fillGroup = "mode", timeFrame = "month")})
 ```
 
 ### By Term
 ```{r}
 plotlyOutput("modeTerm")
 
-output$modeTerm <- renderPlotly({plotBars(termData("mode"), "mode", "term")})
+output$modeTerm <- renderPlotly({plotBars(timeData("mode", timeFrame = "term"), fillGroup = "mode", timeFrame = "term")})
 ```
 
 ### By Year
 ```{r}
 plotlyOutput("modeYear")
 
-output$modeYear <- renderPlotly({plotBars(yearData("mode"), "mode", "year")})
+output$modeYear <- renderPlotly({plotBars(timeData("mode", timeFrame = "year"), fillGroup = "mode", timeFrame = "year")})
 ```
 
 Row
@@ -170,28 +170,28 @@ output$typeLines <- renderPlotly({plotLines(linesData("type"), "type")})
 ```{r}
 plotlyOutput("typeBars")
 
-output$typeBars <- renderPlotly({plotBars(wdayData("type"), "type", "weekday")})
+output$typeBars <- renderPlotly({plotBars(timeData("type", timeFrame = "weekday"), fillGroup = "type", timeFrame = "weekday")})
 ```
 
 ### By Month
 ```{r}
 plotlyOutput("typeMonth")
 
-output$typeMonth <- renderPlotly({plotBars(monthData("type"), "type", "month")})
+output$typeMonth <- renderPlotly({plotBars(timeData("type", timeFrame = "month"), fillGroup = "type", timeFrame = "month")})
 ```
 
 ### By Term
 ```{r}
 plotlyOutput("typeTerm")
 
-output$typeTerm <- renderPlotly({plotBars(termData("type"), "type", "term")})
+output$typeTerm <- renderPlotly({plotBars(timeData("type", timeFrame = "term"), fillGroup = "type", timeFrame = "term")})
 ```
 
 ### By Year
 ```{r}
 plotlyOutput("typeYear")
 
-output$typeYear <- renderPlotly({plotBars(yearData("type"), "type", "year")})
+output$typeYear <- renderPlotly({plotBars(timeData("type", timeFrame = "year"), fillGroup = "type", timeFrame = "year")})
 ```
 
 Row
@@ -226,28 +226,28 @@ output$refLines <- renderPlotly({plotLines(linesData("referral"), "referral")})
 ```{r}
 plotlyOutput("refBars")
 
-output$refBars <- renderPlotly({plotBars(wdayData("referral"), "referral", "weekday")})
+output$refBars <- renderPlotly({plotBars(timeData("referral", timeFrame = "weekday"), fillGroup = "referral", timeFrame = "weekday")})
 ```
 
 ### By Month
 ```{r}
 plotlyOutput("refMonth")
 
-output$refMonth <- renderPlotly({plotBars(monthData("referral"), "referral", "month")})
+output$refMonth <- renderPlotly({plotBars(timeData("referral", timeFrame = "month"), fillGroup = "referral", timeFrame = "month")})
 ```
 
 ### By Term
 ```{r}
 plotlyOutput("refTerm")
 
-output$refTerm <- renderPlotly({plotBars(termData("referral"), "referral", "term")})
+output$refTerm <- renderPlotly({plotBars(timeData("referral", timeFrame = "term"), fillGroup = "referral", timeFrame = "term")})
 ```
 
 ### By Year
 ```{r}
 plotlyOutput("refYear")
 
-output$refYear <- renderPlotly({plotBars(yearData("referral"), "referral", "year")})
+output$refYear <- renderPlotly({plotBars(timeData("referral", timeFrame = "year"), fillGroup = "referral", timeFrame = "year")})
 ```
 
 Row
@@ -283,28 +283,28 @@ output$totalLines <- renderPlotly({plotLines(linesData())})
 ```{r}
 plotlyOutput("totalBars")
 
-output$totalBars <- renderPlotly({plotBars(wdayData(), timeFrame = "weekday")})
+output$totalBars <- renderPlotly({plotBars(timeData(timeFrame = "weekday"), timeFrame = "weekday")})
 ```
 
 ### By Month
 ```{r}
 plotlyOutput("totalMonth")
 
-output$totalMonth <- renderPlotly({plotBars(monthData("referral"), "referral", "month")})
+output$totalMonth <- renderPlotly({plotBars(timeData(timeFrame = "month"), timeFrame =  "month")})
 ```
 
 ### By Term
 ```{r}
 plotlyOutput("totalTerm")
 
-output$totalTerm <- renderPlotly({plotBars(termData("referral"), "referral", "term")})
+output$totalTerm <- renderPlotly({plotBars(timeData(timeFrame = "term"), timeFrame = "term")})
 ```
 
 ### By Year
 ```{r}
 plotlyOutput("totalYear")
 
-output$totalYear <- renderPlotly({plotBars(yearData("referral"), "referral", "year")})
+output$totalYear <- renderPlotly({plotBars(timeData(timeFrame = "year"), timeFrame = "year")})
 ```
 
 Row
@@ -414,52 +414,41 @@ plotLines <- function(df, lineColor = NULL) {
   ggplotly(p)
 }
 
-wdayData <- function(x = NULL) {
-  groups1 <- c("day", "weekday")
-  groups2 <- "weekday"
+timeData <- function(x = NULL, timeFrame = "weekday") {
+
+  groups1 <- c("day", timeFrame)
+  groups2 <- timeFrame
+  
+
   if(!is.null(x)){
     groups1 <- c(groups1, x)
     groups2 <- c(groups2, x)
   }
-  df <- df() %>%
-    mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
+  
+  if (timeFrame == "weekday"){
+    df <- df() %>%
+      mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)")
+  } else if (timeFrame == "month") {
+    df <- df() %>%
+      mutate_(day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)")    
+  } else if (timeFrame == "term") {
+     df <- df() %>%
+      mutate_(day = "as.Date(date_time)", "term")   
+  } else if (timeFrame == "year") {
+    df <- df() %>%
+      mutate_(day = "as.Date(date_time)", year = "as.factor(lubridate::year(date_time))")
+  }
+  
+  df <- df %>%
     group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
     group_by_(.dots = groups2) %>%
     summarize(value = calc()(value))
+  
   if(!is.null(x)) {
-    df %>%
-    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+    df <- df %>%
+      filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
   }
-  return(df)
-}
-
-monthData <- function(x) {
-  df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "month") %>%
-    summarize(value = calc()(value)) %>%
-    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
-}
-
-termData <- function(x) {
-  df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", "term") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "term") %>%
-    summarize(value = calc()(value)) %>%
-    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
-}
-
-yearData <- function(x) {
-  df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", year = "lubridate::year(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "year") %>%
-    summarize(value = calc()(value)) %>%
-    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
-  df$year <- as.factor(df$year)
   return(df)
 }
 
