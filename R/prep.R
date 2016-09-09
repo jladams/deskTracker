@@ -1,15 +1,25 @@
 
 # Install and load packages
-pkgs <- c("dplyr", "plotly", "tidyr", "lubridate", "stringr", "shiny", "flexdashboard", "ggplot2", "d3heatmap")
+# pkgs <- c("dplyr", "plotly", "tidyr", "lubridate", "stringr", "shiny", "flexdashboard", "ggplot2", "d3heatmap")
 
-toInstall <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
-if(length(toInstall)) { install.packages(toInstall) }
-lapply(pkgs, require, character.only = TRUE)
+# toInstall <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
+# if(length(toInstall)) { install.packages(toInstall) }
+# lapply(pkgs, library)
 
 # if(!("sumar" %in% installed.packages())) { devtools::install_github("jladams/sumar")}
 # library("sumar")
 
-rm(list = c("pkgs", "toInstall"))
+# rm(list = c("pkgs", "toInstall"))
+
+library(d3heatmap)
+library(dplyr)
+library(flexdashboard)
+library(ggplot2)
+library(lubridate)
+library(plotly)
+library(shiny)
+library(stringr)
+library(tidyr)
 
 # Turn off the PDF renderer from plotly (generates a file that breaks Shiny)
 pdf(NULL)

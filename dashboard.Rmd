@@ -261,6 +261,62 @@ tableOutput("refheatData")
 ```
 
 
+Totals
+=======================================================================
+
+```{r}
+
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### By Time
+```{r}
+plotlyOutput("totalLines")
+
+output$totalLines <- renderPlotly({plotLines(linesData())})
+
+```
+
+### By Weekday
+```{r}
+plotlyOutput("totalBars")
+
+output$totalBars <- renderPlotly({plotBars(wdayData(), timeFrame = "weekday")})
+```
+
+### By Month
+```{r}
+plotlyOutput("totalMonth")
+
+output$totalMonth <- renderPlotly({plotBars(monthData("referral"), "referral", "month")})
+```
+
+### By Term
+```{r}
+plotlyOutput("totalTerm")
+
+output$totalTerm <- renderPlotly({plotBars(termData("referral"), "referral", "term")})
+```
+
+### By Year
+```{r}
+plotlyOutput("totalYear")
+
+output$totalYear <- renderPlotly({plotBars(yearData("referral"), "referral", "year")})
+```
+
+Row
+-----------------------------------------------------------------------
+### Data
+
+```{r}
+
+output$totalHeatData <- renderTable({heatData("referral")})
+tableOutput("totalHeatData")
+```
+
 Raw Data
 =======================================================================
 
@@ -312,13 +368,23 @@ ovData <- reactive({
   return(df)
 })
 
-linesData <- function(x) {
+linesData <- function(x = NULL) {
+  groups1 <- c("day", "hour")
+  groups2 <- "hour"
+  if(!is.null(x)){
+    groups1 <- c(groups1, x)
+    groups2 <- c(groups2, x)
+  }
   df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
+    mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
+    group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
-    group_by_(x,"hour") %>%
-    summarize(value = calc()(value)) %>%
+    group_by_(.dots = groups2) %>%
+    summarize(value = calc()(value))
+  if(!is.null(x)) {
+    df %>%
     filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+  }
   return(df)
 }
 
@@ -331,23 +397,41 @@ heatData <- function(x) {
   return(df)
 }
 
-plotLines <- function(df, lineColor) {
-  p <- ggplot(data = df, aes(x = hour, y = value))
-  p <- p +
-    geom_line(aes_string(color = lineColor)) +
-#    geom_text(aes_string(label = quote(round(value, 2)))) + 
-    scale_color_discrete(guide = guide_legend(title = stringr::str_to_title(lineColor))) +
+plotLines <- function(df, lineColor = NULL) {
+
+  p <- ggplot(data = df, aes(x = hour, y = value)) +
     labs(x = "Time", y = "Number of Interactions")
+
+  if(!is.null(lineColor)) {
+    p <- p +
+      geom_line(aes_string(color = lineColor)) +
+      scale_color_discrete(guide = guide_legend(title = stringr::str_to_title(lineColor)))
+  } else {
+    p <- p +
+      geom_line()
+  }
+  
   ggplotly(p)
 }
 
-wdayData <- function(x) {
+wdayData <- function(x = NULL) {
+  groups1 <- c("day", "weekday")
+  groups2 <- "weekday"
+  if(!is.null(x)){
+    groups1 <- c(groups1, x)
+    groups2 <- c(groups2, x)
+  }
   df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
+    mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)") %>%
+    group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
-    group_by_(x, "weekday") %>%
-    summarize(value = calc()(value)) %>%
+    group_by_(.dots = groups2) %>%
+    summarize(value = calc()(value))
+  if(!is.null(x)) {
+    df %>%
     filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+  }
+  return(df)
 }
 
 monthData <- function(x) {
@@ -379,13 +463,19 @@ yearData <- function(x) {
   return(df)
 }
 
-plotBars <- function(df, fillGroup, timeFrame){
-  p <- ggplot(data = df, aes_string(x = timeFrame, y = "value"))
-  p <- p +
-    geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
-    geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
-    scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup))) +
-    labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
+plotBars <- function(df, fillGroup = NULL, timeFrame){
+  p <- ggplot(data = df, aes_string(x = timeFrame, y = "value")) +
+      labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
+  if(!is.null(fillGroup)){
+    p <- p +
+      geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
+      geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
+      scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
+  } else{
+    p <- p +
+      geom_bar(fill = "steelblue", stat = "identity") +
+      geom_text(aes_string(label = quote(round(value, 2))), vjust = 0)
+  }
   ggplotly(p)
 }
 
