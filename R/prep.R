@@ -6,8 +6,8 @@ toInstall <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
 if(length(toInstall)) { install.packages(toInstall) }
 lapply(pkgs, require, character.only = TRUE)
 
-if(!("sumar" %in% installed.packages())) { devtools::install_github("jladams/sumar")}
-library("sumar")
+# if(!("sumar" %in% installed.packages())) { devtools::install_github("jladams/sumar")}
+# library("sumar")
 
 rm(list = c("pkgs", "toInstall"))
 
