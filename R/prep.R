@@ -11,8 +11,10 @@ library("sumar")
 
 rm(list = c("pkgs", "toInstall"))
 
+# Turn off the PDF renderer from plotly (generates a file that breaks Shiny)
 pdf(NULL)
 
+# Compare dates and times to Dartmouth academic calendar, return Term name
 getTerms <- function(date_time){
   ifelse(
     ymd(as_date(date_time)) %in% lubridate::ymd(20090625):lubridate::ymd(20090901) |
@@ -63,6 +65,7 @@ getTerms <- function(date_time){
 
 # Load and format deskTracker data
 deskTracker <- read.csv("./data/deskTracker.csv", stringsAsFactors = FALSE)
+
 deskTracker <- deskTracker %>%
   mutate(date_time = as.character.Date(floor_date(ymd_hms(deskTracker$date_time), "hour"))) %>%
   select(response_set, date_time, question, response) %>%
@@ -73,12 +76,14 @@ deskTracker <- deskTracker %>%
   select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value) %>%
   replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
 
+
 # Call to Suma API, save locally
 # suma <- suma_from_api(initiativeId = 5, startDate = "2016-05-01", sepDates = FALSE) 
 # write.csv(suma, "./data/suma.csv", row.names = FALSE)
 
 # Load and format Suma Data
 suma <- read.csv("./data/suma.csv", stringsAsFactors = FALSE)
+
 suma <- suma %>% 
   mutate(date_time = as.character.Date(floor_date(ymd_hms(suma$sessionStart), "hour"))) %>%
   select(countId, date_time, actGroup, activities) %>%
