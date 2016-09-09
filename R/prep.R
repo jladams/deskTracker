@@ -1,5 +1,5 @@
 
-
+# Install and load packages
 pkgs <- c("dplyr", "plotly", "tidyr", "lubridate", "stringr", "shiny", "flexdashboard", "ggplot2", "d3heatmap")
 
 toInstall <- pkgs[!(pkgs %in% installed.packages()[,"Package"])]
@@ -9,7 +9,7 @@ lapply(pkgs, require, character.only = TRUE)
 if(!("sumar" %in% installed.packages())) { devtools::install_github("jladams/sumar")}
 library("sumar")
 
-
+rm(list = c("pkgs", "toInstall"))
 
 pdf(NULL)
 
@@ -61,25 +61,44 @@ getTerms <- function(date_time){
   )
 }
 
-
-
-raw <- read.csv("./data/deskTracker.csv", stringsAsFactors = FALSE)
-raw <- raw %>%
-  mutate(date_time = as.character.Date(floor_date(ymd_hms(raw$date_time), "hour"))) %>%
+# Load and format deskTracker data
+deskTracker <- read.csv("./data/deskTracker.csv", stringsAsFactors = FALSE)
+deskTracker <- deskTracker %>%
+  mutate(date_time = as.character.Date(floor_date(ymd_hms(deskTracker$date_time), "hour"))) %>%
   select(response_set, date_time, question, response) %>%
   spread(question, response)
 
-raw <- raw %>%
-  mutate(value = as.numeric(ifelse(!is.na(raw$response_set), 1, 0)), term = as.character(getTerms(raw$date_time))) %>%
+deskTracker <- deskTracker %>%
+  mutate(value = as.numeric(ifelse(!is.na(deskTracker$response_set), 1, 0)), term = as.character(getTerms(deskTracker$date_time))) %>%
   select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value) %>%
   replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
 
-df1 <- raw %>%
+# Call to Suma API, save locally
+# suma <- suma_from_api(initiativeId = 5, startDate = "2016-05-01", sepDates = FALSE) 
+# write.csv(suma, "./data/suma.csv", row.names = FALSE)
+
+# Load and format Suma Data
+suma <- read.csv("./data/suma.csv", stringsAsFactors = FALSE)
+suma <- suma %>% 
+  mutate(date_time = as.character.Date(floor_date(ymd_hms(suma$sessionStart), "hour"))) %>%
+  select(countId, date_time, actGroup, activities) %>%
+  filter(actGroup != "No Activity") %>%
+  spread(actGroup, activities)
+
+suma <- suma %>%
+  mutate(value = as.numeric(ifelse(!is.na(suma$countId), 1, 0)), term = as.character(getTerms(suma$date_time))) %>%
+  select(id = countId, date_time, mode = `Communication Type`, type = `Transaction Type`, referral = `Referral To`, term, value) %>%
+  replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
+
+
+# Combine and properly format deskTracker and Suma data
+df1 <- deskTracker %>%
+  rbind(suma) %>%
   select(id, date_time, mode, type, referral, term, value)
 
 
 
-
+# Filling in missing values
 # ts <- seq.POSIXt(as.POSIXct("2009-06-25 0:00"), as.POSIXct("2016-08-17 23:59"), by = "hour")
 # ts <- data.frame(date_time = ts)
 
