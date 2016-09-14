@@ -83,9 +83,7 @@ deskTracker <- deskTracker %>%
 
 deskTracker <- deskTracker %>%
   mutate(value = as.numeric(ifelse(!is.na(deskTracker$response_set), 1, 0)), term = as.character(getTerms(deskTracker$date_time))) %>%
-  select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value) %>%
-  replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
-
+  select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
 
 # Call to Suma API, save locally
 # suma <- suma_from_api(initiativeId = 5, startDate = "2016-05-01", sepDates = FALSE) 
@@ -102,14 +100,17 @@ suma <- suma %>%
 
 suma <- suma %>%
   mutate(value = as.numeric(ifelse(!is.na(suma$countId), 1, 0)), term = as.character(getTerms(suma$date_time))) %>%
-  select(id = countId, date_time, mode = `Communication Type`, type = `Transaction Type`, referral = `Referral To`, term, value) %>%
-  replace_na(replace = list(`mode` = "NA", `type` = "NA", `referral` = "NA"))
+  select(id = countId, date_time, mode = `Communication Type`, type = `Transaction Type`, referral = `Referral To`, term, value)
 
 
 # Combine and properly format deskTracker and Suma data
 df1 <- deskTracker %>%
   rbind(suma) %>%
-  select(id, date_time, mode, type, referral, term, value)
+  filter((!is.na(mode)) & (!is.na(type))) %>%
+  select(date_time, mode, type, referral, term, value) %>%
+  complete(date_time, nesting(mode, type), fill = list(value = 0)) %>%
+  fill(term) %>%
+  replace_na(replace = list(`referral` = "None", `term` = "Summer"))
 
 
 
