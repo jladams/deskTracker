@@ -308,13 +308,20 @@ plotlyOutput("totalYear")
 output$totalYear <- renderPlotly({plotBars(timeData(timeFrame = "year"), timeFrame = "year")})
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
+### Daily Totals
+```{r}
+
+output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day")})
+tableOutput("totalDaily")
+```
+
 ### Data
 
 ```{r}
 
-output$totalHeatData <- renderTable({heatData("referral")})
+output$totalHeatData <- renderTable({dailyData()})
 tableOutput("totalHeatData")
 ```
 
@@ -403,7 +410,17 @@ plotLines <- function(df, lineColor = NULL) {
   ggplotly(p)
 }
 
+dailyData <- function() {
+  df <- df()
+  
+  df <- df %>%
+    mutate_(day = "as.Date(date_time)")
+
+}
+
 timeData <- function(x = NULL, timeFrame = "weekday") {
+
+  df <- df()
 
   groups1 <- c("day", timeFrame)
   groups2 <- timeFrame
@@ -415,16 +432,16 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   }
   
   if (timeFrame == "weekday"){
-    df <- df() %>%
+    df <- df %>%
       mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)")
   } else if (timeFrame == "month") {
-    df <- df() %>%
+    df <- df %>%
       mutate_(day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)")    
   } else if (timeFrame == "term") {
-     df <- df() %>%
+     df <- df %>%
       mutate_(day = "as.Date(date_time)", "term")   
   } else if (timeFrame == "year") {
-    df <- df() %>%
+    df <- df %>%
       mutate_(day = "as.Date(date_time)", year = "as.factor(lubridate::year(date_time))")
   }
   
@@ -449,7 +466,7 @@ plotBars <- function(df, fillGroup = NULL, timeFrame){
       geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
       geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
       scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
-  } else{
+  } else {
     p <- p +
       geom_bar(fill = "steelblue", stat = "identity") +
       geom_text(aes_string(label = quote(round(value, 2))), vjust = 0)
