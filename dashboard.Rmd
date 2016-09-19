@@ -139,14 +139,21 @@ plotlyOutput("modeYear")
 output$modeYear <- renderPlotly({plotBars(timeData("mode", timeFrame = "year"), fillGroup = "mode", timeFrame = "year")})
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
+### Daily Totals
+```{r}
+
+output$modeDaily <- renderPlotly({plotBars(dailyData("mode"), fillGroup = "mode", timeFrame = "day", daily = TRUE)})
+plotlyOutput("modeDaily")
+```
+
 ### Data
 
 ```{r}
-output$modeData <- renderTable({heatData("mode")})
 
-tableOutput("modeData")
+output$modeDailyData <- renderTable({dailyData("mode")})
+tableOutput("modeDailyData")
 ```
 
 By Type of Interaction
@@ -195,14 +202,21 @@ plotlyOutput("typeYear")
 output$typeYear <- renderPlotly({plotBars(timeData("type", timeFrame = "year"), fillGroup = "type", timeFrame = "year")})
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
+### Daily Totals
+```{r}
+
+output$typeDaily <- renderPlotly({plotBars(dailyData("type"), fillGroup = "type", timeFrame = "day", daily = TRUE)})
+plotlyOutput("typeDaily")
+```
+
 ### Data
 
 ```{r}
 
-output$typeheatData <- renderTable({heatData("type")})
-tableOutput("typeheatData")
+output$typeDailyData <- renderTable({dailyData("type")})
+tableOutput("typeDailyData")
 ```
 
 By Referral
@@ -251,14 +265,21 @@ plotlyOutput("refYear")
 output$refYear <- renderPlotly({plotBars(timeData("referral", timeFrame = "year"), fillGroup = "referral", timeFrame = "year")})
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
+### Daily Totals
+```{r}
+
+output$refDaily <- renderPlotly({plotBars(dailyData("referral"), fillGroup = "referral", timeFrame = "day", daily = TRUE)})
+plotlyOutput("refDaily")
+```
+
 ### Data
 
 ```{r}
 
-output$refheatData <- renderTable({heatData("referral")})
-tableOutput("refheatData")
+output$refDailyData <- renderTable({dailyData("referral")})
+tableOutput("refDailyData")
 ```
 
 
@@ -313,7 +334,7 @@ Row {.tabset .tabset-fade}
 ### Daily Totals
 ```{r}
 
-output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day")})
+output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day", daily = TRUE)})
 plotlyOutput("totalDaily")
 ```
 
@@ -410,12 +431,15 @@ plotLines <- function(df, lineColor = NULL) {
   ggplotly(p)
 }
 
-dailyData <- function() {
+dailyData <- function(x = NULL) {
   df <- df()
-  
+  groups <- "day"
+  if(!is.null(x)){
+    groups <- c(groups, x)
+  }
   df <- df %>%
     mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))") %>%
-    group_by(day) %>%
+    group_by_(.dots = groups) %>%
     summarize(value = sum(value))
 }
 
@@ -459,14 +483,21 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   return(df)
 }
 
-plotBars <- function(df, fillGroup = NULL, timeFrame){
+plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
   p <- ggplot(data = df, aes_string(x = timeFrame, y = "value")) +
       labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
-  if(!is.null(fillGroup)){
+  if((!is.null(fillGroup)) && (daily == FALSE)){
     p <- p +
       geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
       geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
       scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
+  } else if ((!is.null(fillGroup)) && (daily == TRUE)){
+    p <- p +
+      geom_bar(aes_string(fill = fillGroup), stat = "identity") +
+      scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
+  } else if ((is.null(fillGroup)) && (daily == TRUE)){
+    p <- p +
+      geom_bar(fill = "steelblue", stat = "identity") 
   } else {
     p <- p +
       geom_bar(fill = "steelblue", stat = "identity") +
