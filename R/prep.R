@@ -85,8 +85,11 @@ deskTracker <- deskTracker %>%
   mutate(value = as.numeric(ifelse(!is.na(deskTracker$response_set), 1, 0)), term = as.character(getTerms(deskTracker$date_time))) %>%
   select(id = response_set, date_time, mode = `*Type of Communication`, type = `*Type of Transaction`, referral = `Referral to:`, term, value)
 
+deskTracker$type <- replace(deskTracker$type, deskTracker$type == "In Depth Reference (teaches strategy, lengthier)", "In Depth Reference")
+deskTracker$type <- replace(deskTracker$type, deskTracker$type == "Equipment (computing, copy/scan, printing, A/V)", "Technology Issues")
+
 # Call to Suma API, save locally
-# suma <- suma_from_api(initiativeId = 5, startDate = "2016-05-01", sepDates = FALSE) 
+# suma <- suma_from_api(initiativeId = 5, startDate = "2016-08-01", sepDates = FALSE) 
 # write.csv(suma, "./data/suma.csv", row.names = FALSE)
 
 # Load and format Suma Data
@@ -101,6 +104,7 @@ suma <- suma %>%
 suma <- suma %>%
   mutate(value = as.numeric(ifelse(!is.na(suma$countId), 1, 0)), term = as.character(getTerms(suma$date_time))) %>%
   select(id = countId, date_time, mode = `Communication Type`, type = `Transaction Type`, referral = `Referral To`, term, value)
+
 
 
 # Combine and properly format deskTracker and Suma data
