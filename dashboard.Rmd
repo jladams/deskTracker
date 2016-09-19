@@ -314,7 +314,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 
 output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day")})
-tableOutput("totalDaily")
+plotlyOutput("totalDaily")
 ```
 
 ### Data
@@ -372,7 +372,7 @@ linesData <- function(x = NULL) {
       mutate_(weekday = "lubridate::wday(date_time, label = TRUE)")
   }
   df <- df %>%
-    mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
+    mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", hour = "lubridate::hour(date_time)") %>%
     group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
     group_by_(.dots = groups2) %>%
@@ -386,7 +386,7 @@ linesData <- function(x = NULL) {
 
 heatData <- function(x) {
   df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    group_by_(x, day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
     summarize(value = sum(value)) %>%
     group_by_(x, "weekday", "hour") %>%
     summarize(value = calc()(value))
@@ -414,8 +414,9 @@ dailyData <- function() {
   df <- df()
   
   df <- df %>%
-    mutate_(day = "as.Date(date_time)")
-
+    mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))") %>%
+    group_by(day) %>%
+    summarize(value = sum(value))
 }
 
 timeData <- function(x = NULL, timeFrame = "weekday") {
@@ -433,16 +434,16 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   
   if (timeFrame == "weekday"){
     df <- df %>%
-      mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)")
+      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", weekday = "lubridate::wday(date_time, label = TRUE)")
   } else if (timeFrame == "month") {
     df <- df %>%
-      mutate_(day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)")    
+      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", month = "lubridate::month(date_time, label = TRUE)")    
   } else if (timeFrame == "term") {
      df <- df %>%
-      mutate_(day = "as.Date(date_time)", "term")   
+      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", "term")   
   } else if (timeFrame == "year") {
     df <- df %>%
-      mutate_(day = "as.Date(date_time)", year = "as.factor(lubridate::year(date_time))")
+      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", year = "as.factor(lubridate::year(date_time))")
   }
   
   df <- df %>%
@@ -470,6 +471,11 @@ plotBars <- function(df, fillGroup = NULL, timeFrame){
     p <- p +
       geom_bar(fill = "steelblue", stat = "identity") +
       geom_text(aes_string(label = quote(round(value, 2))), vjust = 0)
+  }
+  if (timeFrame == "day") {
+    p <- p +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+      labs(x = " ")
   }
   ggplotly(p)
 }
