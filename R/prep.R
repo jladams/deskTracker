@@ -13,6 +13,7 @@
 
 library(d3heatmap)
 library(dplyr)
+library(DT)
 library(flexdashboard)
 library(ggplot2)
 library(lubridate)

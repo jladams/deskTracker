@@ -22,8 +22,8 @@ Sidebar {.sidebar}
 
 ```{r}
 dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Date())
-textOutput("dateValidate")
-output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
+# textOutput("dateValidate")
+# output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
 selectInput("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
 
@@ -45,12 +45,23 @@ checkboxInput("selectAllRef", "Select/Unselect All (Referral)", value = TRUE)
 checkboxGroupInput("term", label = h4("Academic Term"), choices = uniqueTerm, selected = uniqueTerm)
 checkboxInput("selectAllTerm", "Select/Unselect All (Term)", value = TRUE)
 
+downloadButton("downloadRaw", "Download Raw Data")
+
+downloadHandler(
+  filename = function() {
+    paste('data-', Sys.Date(), '.csv', sep = '')
+  },
+  content = function(con) {
+    write.csv(df(), con, row.names = FALSE)
+  }
+)
+
 reactive({ 
   updateCheckboxGroupInput(session, "mode", choices = uniqueMode, selected = if(input$selectAllMode) uniqueMode)
   updateCheckboxGroupInput(session, "type", choices = uniqueType, selected = if(input$selectAllType) uniqueType)
   updateCheckboxGroupInput(session, "referral", choices = uniqueRef, selected = if(input$selectAllRef) uniqueRef)
   updateCheckboxGroupInput(session, "term", choices = uniqueTerm, selected = if(input$selectAllTerm) uniqueTerm)
-  })
+})
 ```
 
 Overview
@@ -63,7 +74,6 @@ Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Day and Time
 ```{r}
-
 d3heatmapOutput("ovHeat")
 
 output$ovHeat <- renderD3heatmap({
@@ -108,7 +118,6 @@ Row {.tabset .tabset-fade}
 plotlyOutput("modeLines")
 
 output$modeLines <- renderPlotly({plotLines(linesData("mode"), "mode")})
-
 ```
 
 ### By Weekday
@@ -143,17 +152,17 @@ Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Daily Totals
 ```{r}
+plotlyOutput("modeDaily")
 
 output$modeDaily <- renderPlotly({plotBars(dailyData("mode"), fillGroup = "mode", timeFrame = "day", daily = TRUE)})
-plotlyOutput("modeDaily")
 ```
 
 ### Data
 
 ```{r}
+tableOutput("modeDailyData")
 
 output$modeDailyData <- renderTable({dailyData("mode")})
-tableOutput("modeDailyData")
 ```
 
 By Type of Interaction
@@ -171,7 +180,6 @@ Row {.tabset .tabset-fade}
 plotlyOutput("typeLines")
 
 output$typeLines <- renderPlotly({plotLines(linesData("type"), "type")})
-
 ```
 
 ### By Weekday
@@ -206,17 +214,17 @@ Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Daily Totals
 ```{r}
+plotlyOutput("typeDaily")
 
 output$typeDaily <- renderPlotly({plotBars(dailyData("type"), fillGroup = "type", timeFrame = "day", daily = TRUE)})
-plotlyOutput("typeDaily")
 ```
 
 ### Data
 
 ```{r}
+tableOutput("typeDailyData")
 
 output$typeDailyData <- renderTable({dailyData("type")})
-tableOutput("typeDailyData")
 ```
 
 By Referral
@@ -234,7 +242,6 @@ Row {.tabset .tabset-fade}
 plotlyOutput("refLines")
 
 output$refLines <- renderPlotly({plotLines(linesData("referral"), "referral")})
-
 ```
 
 ### By Weekday
@@ -269,17 +276,17 @@ Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Daily Totals
 ```{r}
+plotlyOutput("refDaily")
 
 output$refDaily <- renderPlotly({plotBars(dailyData("referral"), fillGroup = "referral", timeFrame = "day", daily = TRUE)})
-plotlyOutput("refDaily")
 ```
 
 ### Data
 
 ```{r}
+tableOutput("refDailyData")
 
 output$refDailyData <- renderTable({dailyData("referral")})
-tableOutput("refDailyData")
 ```
 
 
@@ -298,7 +305,6 @@ Row {.tabset .tabset-fade}
 plotlyOutput("totalLines")
 
 output$totalLines <- renderPlotly({plotLines(linesData())})
-
 ```
 
 ### By Weekday
@@ -333,17 +339,17 @@ Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Daily Totals
 ```{r}
+plotlyOutput("totalDaily")
 
 output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day", daily = TRUE)})
-plotlyOutput("totalDaily")
 ```
 
 ### Data
 
 ```{r}
+tableOutput("totalHeatData")
 
 output$totalHeatData <- renderTable({dailyData()})
-tableOutput("totalHeatData")
 ```
 
 Raw Data
@@ -353,8 +359,11 @@ Row
 -----------------------------------------------------------------------
 ### Raw Data
 ```{r}
-output$df <- renderTable(df())
-tableOutput("df")
+DT::dataTableOutput("df")
+
+output$df <- DT::renderDataTable({
+  DT::datatable(df(), extensions = c("Scroller"), options = list( deferRender = TRUE, scrollY = 300, scroller = TRUE))
+})
 ```
 
 
