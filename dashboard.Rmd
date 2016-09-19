@@ -84,30 +84,14 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("ovLines")
 
-output$ovLines <- renderPlotly({
-  p <- ggplot(data = ovLineData(), aes(x = hour, y = value))
-  p <- p +
-    geom_line(size = 1) +
-    geom_point() +
-    guides(color = "none") + 
-    labs(x = "Time", y = "Number of Interactions")
-  ggplotly(p)
-})
+output$ovLines <- renderPlotly({plotLines(linesData())})
 ```
 
 ### By Weekday
 ```{r}
 plotlyOutput("ovDayLines")
 
-output$ovDayLines <- renderPlotly({
-  p <- ggplot(data = ovData(), aes(x = hour, y = value))
-  p <- p +
-    geom_line(aes(color = weekday), size = 1) +
-    geom_point(aes(color = weekday)) +
-    scale_color_discrete(guide = guide_legend(title = "Weekday")) +
-    labs(x = "Time", y = "Number of Interactions")
-  ggplotly(p)
-})
+output$ovDayLines <- renderPlotly({plotLines(linesData("weekday"), "weekday")})
 ```
 
 By Mode of Interaction
@@ -348,18 +332,19 @@ tableOutput("df")
 
 ```{r}
 
-
+# Get the calculation (mean, median, etc.) from input
 calc <- reactive({ calc <- match.fun(as.character(input$calculation)) })
 
+# Get our raw data as reactive, filtered by the dates and selections on the sidebar
 df <- reactive({
   df <- df1 %>%
     filter(as.Date(date_time) >= as.Date(input$dates[1]) & as.Date(date_time) <= as.Date(input$dates[2])) %>%
     filter(mode %in% input$mode & type %in% input$type & term %in% input$term & referral %in% input$referral)
 })
 
-
+# Turn data into a matrix suitable for the d3HeatMap package
 d3HeatData <- reactive({
-  df <- ovData() %>%
+  df <- linesData("weekday") %>%
     spread(hour, value)
   row.names(df) <- as.character(as.factor(df$weekday))
   df <- data.matrix(df)
@@ -367,32 +352,19 @@ d3HeatData <- reactive({
   return(df)
 })
 
-ovLineData <- reactive({
-  df <- df() %>%
-    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_("hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-})
-
-ovData <- reactive({
-  df <- df() %>%
-    group_by_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_("weekday", "hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-})
-
 linesData <- function(x = NULL) {
+  df <- df()
   groups1 <- c("day", "hour")
   groups2 <- "hour"
   if(!is.null(x)){
     groups1 <- c(groups1, x)
     groups2 <- c(groups2, x)
   }
-  df <- df() %>%
+  if((!is.null(x)) && (x == "weekday")){
+    df <- df %>%
+      mutate_(weekday = "lubridate::wday(date_time, label = TRUE)")
+  }
+  df <- df %>%
     mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
     group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
@@ -400,7 +372,7 @@ linesData <- function(x = NULL) {
     summarize(value = calc()(value))
   if(!is.null(x)) {
     df %>%
-    filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
+      filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
   }
   return(df)
 }
