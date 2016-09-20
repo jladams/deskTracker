@@ -83,14 +83,14 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("ovLines")
 
-output$ovLines <- renderPlotly({plotLines(linesData())})
+output$ovLines <- renderPlotly({plotLines(timeData(timeFrame = "hour"))})
 ```
 
 ### By Weekday
 ```{r}
 plotlyOutput("ovDayLines")
 
-output$ovDayLines <- renderPlotly({plotLines(linesData("weekday"), "weekday")})
+output$ovDayLines <- renderPlotly({plotLines(timeData(x = "weekday", timeFrame = "hour"), "weekday")})
 ```
 
 By Mode of Interaction
@@ -106,7 +106,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("modeLines")
 
-output$modeLines <- renderPlotly({plotLines(linesData("mode"), "mode")})
+output$modeLines <- renderPlotly({plotLines(timeData("mode", "hour"), "mode")})
 ```
 
 ### By Weekday
@@ -168,7 +168,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("typeLines")
 
-output$typeLines <- renderPlotly({plotLines(linesData("type"), "type")})
+output$typeLines <- renderPlotly({plotLines(timeData("type", "hour"), "type")})
 ```
 
 ### By Weekday
@@ -230,7 +230,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("refLines")
 
-output$refLines <- renderPlotly({plotLines(linesData("referral"), "referral")})
+output$refLines <- renderPlotly({plotLines(timeData("referral", "hour"), "referral")})
 ```
 
 ### By Weekday
@@ -293,7 +293,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 plotlyOutput("totalLines")
 
-output$totalLines <- renderPlotly({plotLines(linesData())})
+output$totalLines <- renderPlotly({plotLines(timeData(timeFrame = "hour"))})
 ```
 
 ### By Weekday
@@ -383,38 +383,15 @@ df <- reactive({
 
 # Turn data into a matrix suitable for the d3HeatMap package
 d3HeatData <- reactive({
-  df <- linesData("weekday") %>%
+  df <- timeData(x = "weekday", timeFrame = "hour") %>%
     spread(hour, value)
   row.names(df) <- as.character(as.factor(df$weekday))
   df <- data.matrix(df)
+  # Remove row names
   df <- df[,2:ncol(df)]
   return(df)
 })
 
-linesData <- function(x = NULL) {
-  df <- df()
-  groups1 <- c("day", "hour")
-  groups2 <- "hour"
-  if(!is.null(x)){
-    groups1 <- c(groups1, x)
-    groups2 <- c(groups2, x)
-  }
-  if((!is.null(x)) && (x == "weekday")){
-    df <- df %>%
-      mutate_(weekday = "lubridate::wday(date_time, label = TRUE)")
-  }
-  df <- df %>%
-    mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
-    group_by_(.dots = groups1) %>%
-    summarize(value = sum(value)) %>%
-    group_by_(.dots = groups2) %>%
-    summarize(value = calc()(value))
-  if(!is.null(x)) {
-    df %>%
-      filter_(lazyeval::interp(~ var != "NA", var = as.name(x)))
-  }
-  return(df)
-}
 
 heatData <- function(x) {
   df <- df() %>%
@@ -474,7 +451,15 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
     groups2 <- c(groups2, x)
   }
   
-  if (timeFrame == "weekday"){
+  if ((!is.null(x)) && (x == "weekday")) {
+    df <- df %>%
+      mutate_(weekday = "lubridate::wday(date_time, label = TRUE)")    
+  }
+
+  if (timeFrame == "hour") {
+    df <- df %>%
+      mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)")
+  } else if (timeFrame == "weekday"){
     df <- df %>%
       mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)")
   } else if (timeFrame == "month") {
@@ -501,22 +486,28 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   return(df)
 }
 
+# For plotting each bar graph
 plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
+
   p <- ggplot(data = df, aes_string(x = timeFrame, y = "value")) +
     labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
   
+  # Grouped bars for time series numbers
   if((!is.null(fillGroup)) && (daily == FALSE)){
     p <- p +
       geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
       geom_text(aes_string(label = quote(round(value, 2)), group = fillGroup), position = position_dodge(width = 1), vjust = 0) + 
       scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
+  # Stacked bars for daily numbers
   } else if ((!is.null(fillGroup)) && (daily == TRUE)){
     p <- p +
       geom_bar(aes_string(fill = fillGroup), stat = "identity") +
       scale_fill_discrete(guide = guide_legend(title = stringr::str_to_title(fillGroup)))
+  # Blue bars without labels for daily totals
   } else if ((is.null(fillGroup)) && (daily == TRUE)){
     p <- p +
-      geom_bar(fill = "steelblue", stat = "identity") 
+      geom_bar(fill = "steelblue", stat = "identity")
+  # Blue bars with labels for other totals
   } else {
     p <- p +
       geom_bar(fill = "steelblue", stat = "identity") +
