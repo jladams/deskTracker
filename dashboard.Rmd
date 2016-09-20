@@ -392,26 +392,14 @@ d3HeatData <- reactive({
   return(df)
 })
 
-plotLines <- function(df, lineColor = NULL) {
-
-  p <- ggplot(data = df, aes(x = hour, y = value)) +
-    labs(x = "Time", y = "Number of Interactions")
-
-  if(!is.null(lineColor)) {
-    p <- p +
-      geom_line(aes_string(color = lineColor)) +
-      scale_color_discrete(guide = guide_legend(title = stringr::str_to_title(lineColor)))
-  } else {
-    p <- p +
-      geom_line()
-  }
-  
-  ggplotly(p)
-}
-
+# Get daily totals from raw data
+# Use x to add grouping variables (color in chart, etc.)
+# table = TRUE prints prettier dates for Shiny apps
 dailyData <- function(x = NULL, table = FALSE) {
   df <- df()
   groups <- "day"
+  
+  # Allows grouping 
   if(!is.null(x)){
     groups <- c(groups, x)
   }
@@ -428,6 +416,9 @@ dailyData <- function(x = NULL, table = FALSE) {
   }
 }
 
+# Chunk data into certain time intervals
+# x is for additional grouping variables
+# timeFrame determines interval. Acceptable timeFrame arguments are: "hour", "day", "weekday", "month", "term", "year"
 timeData <- function(x = NULL, timeFrame = "weekday") {
 
   df <- df()
@@ -476,7 +467,31 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   return(df)
 }
 
+
+# For plotting each line graph
+plotLines <- function(df, lineColor = NULL) {
+
+  p <- ggplot(data = df, aes(x = hour, y = value)) +
+    labs(x = "Time", y = "Number of Interactions")
+
+  if(!is.null(lineColor)) {
+    p <- p +
+      geom_line(aes_string(color = lineColor)) +
+      scale_color_discrete(guide = guide_legend(title = stringr::str_to_title(lineColor)))
+  } else {
+    p <- p +
+      geom_line()
+  }
+  
+  ggplotly(p)
+}
+
+
 # For plotting each bar graph
+# df is the data source
+# fillGroup determines color
+# timeFrame determines which time series is on X axis
+# daily = TRUE results in data for daily totals
 plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
 
   p <- ggplot(data = df, aes_string(x = timeFrame, y = "value")) +
@@ -507,6 +522,7 @@ plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
   ggplotly(p)
 }
 
+# Unused
 plotHeat <- function(df) {
   p <- ggplot(data = df, aes(x = hour, y = weekday))
   p <- p +
