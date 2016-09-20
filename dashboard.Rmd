@@ -45,17 +45,6 @@ checkboxInput("selectAllRef", "Select/Unselect All (Referral)", value = TRUE)
 checkboxGroupInput("term", label = h4("Academic Term"), choices = uniqueTerm, selected = uniqueTerm)
 checkboxInput("selectAllTerm", "Select/Unselect All (Term)", value = TRUE)
 
-downloadButton("downloadRaw", "Download Raw Data")
-
-downloadHandler(
-  filename = function() {
-    paste('data-', Sys.Date(), '.csv', sep = '')
-  },
-  content = function(con) {
-    write.csv(df(), con, row.names = FALSE)
-  }
-)
-
 reactive({ 
   updateCheckboxGroupInput(session, "mode", choices = uniqueMode, selected = if(input$selectAllMode) uniqueMode)
   updateCheckboxGroupInput(session, "type", choices = uniqueType, selected = if(input$selectAllType) uniqueType)
@@ -162,7 +151,7 @@ output$modeDaily <- renderPlotly({plotBars(dailyData("mode"), fillGroup = "mode"
 ```{r}
 tableOutput("modeDailyData")
 
-output$modeDailyData <- renderTable({dailyData("mode")})
+output$modeDailyData <- renderTable({dailyData("mode", table = TRUE)})
 ```
 
 By Type of Interaction
@@ -224,7 +213,7 @@ output$typeDaily <- renderPlotly({plotBars(dailyData("type"), fillGroup = "type"
 ```{r}
 tableOutput("typeDailyData")
 
-output$typeDailyData <- renderTable({dailyData("type")})
+output$typeDailyData <- renderTable({dailyData("type", table = TRUE)})
 ```
 
 By Referral
@@ -286,7 +275,7 @@ output$refDaily <- renderPlotly({plotBars(dailyData("referral"), fillGroup = "re
 ```{r}
 tableOutput("refDailyData")
 
-output$refDailyData <- renderTable({dailyData("referral")})
+output$refDailyData <- renderTable({dailyData("referral", table = TRUE)})
 ```
 
 
@@ -349,23 +338,36 @@ output$totalDaily <- renderPlotly({plotBars(dailyData(), timeFrame = "day", dail
 ```{r}
 tableOutput("totalHeatData")
 
-output$totalHeatData <- renderTable({dailyData()})
+output$totalHeatData <- renderTable({dailyData(table = TRUE)})
 ```
 
 Raw Data
 =======================================================================
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 ### Raw Data
 ```{r}
 DT::dataTableOutput("df")
 
 output$df <- DT::renderDataTable({
-  DT::datatable(df(), extensions = c("Scroller"), options = list( deferRender = TRUE, scrollY = 300, scroller = TRUE))
+  DT::datatable(df(), extensions = c("Scroller"), options = list( deferRender = TRUE, scrollY = 350, scroller = TRUE))
 })
 ```
 
+### Download Data
+```{r}
+downloadLink("downloadRaw", label =  "")
+
+downloadHandler(
+  filename = function() {
+    paste('data-', Sys.Date(), '.csv', sep = '')
+  },
+  content = function(con) {
+    write.csv(df(), con, row.names = FALSE)
+  }
+)
+```
 
 ```{r}
 
@@ -402,7 +404,7 @@ linesData <- function(x = NULL) {
       mutate_(weekday = "lubridate::wday(date_time, label = TRUE)")
   }
   df <- df %>%
-    mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", hour = "lubridate::hour(date_time)") %>%
+    mutate_(day = "as.Date(date_time)", hour = "lubridate::hour(date_time)") %>%
     group_by_(.dots = groups1) %>%
     summarize(value = sum(value)) %>%
     group_by_(.dots = groups2) %>%
@@ -416,7 +418,7 @@ linesData <- function(x = NULL) {
 
 heatData <- function(x) {
   df <- df() %>%
-    group_by_(x, day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
+    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
     summarize(value = sum(value)) %>%
     group_by_(x, "weekday", "hour") %>%
     summarize(value = calc()(value))
@@ -440,16 +442,23 @@ plotLines <- function(df, lineColor = NULL) {
   ggplotly(p)
 }
 
-dailyData <- function(x = NULL) {
+dailyData <- function(x = NULL, table = FALSE) {
   df <- df()
   groups <- "day"
   if(!is.null(x)){
     groups <- c(groups, x)
   }
-  df <- df %>%
-    mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))") %>%
-    group_by_(.dots = groups) %>%
-    summarize(value = sum(value))
+  if(table) {
+    df <- df %>%
+      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time)))") %>%
+      group_by_(.dots = groups) %>%
+      summarize(value = sum(value))
+  } else {
+    df <- df %>%
+      mutate_(day = "as.Date(date_time, format = '%Y-%m-%d')") %>%
+      group_by_(.dots = groups) %>%
+      summarize(value = sum(value))
+  }
 }
 
 timeData <- function(x = NULL, timeFrame = "weekday") {
@@ -467,16 +476,16 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
   
   if (timeFrame == "weekday"){
     df <- df %>%
-      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", weekday = "lubridate::wday(date_time, label = TRUE)")
+      mutate_(day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)")
   } else if (timeFrame == "month") {
     df <- df %>%
-      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", month = "lubridate::month(date_time, label = TRUE)")    
+      mutate_(day = "as.Date(date_time)", month = "lubridate::month(date_time, label = TRUE)")    
   } else if (timeFrame == "term") {
      df <- df %>%
-      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", "term")   
+      mutate_(day = "as.Date(date_time)", "term")   
   } else if (timeFrame == "year") {
     df <- df %>%
-      mutate_(day = "as.character.Date(lubridate::floor_date(as.Date(date_time), 'day'))", year = "as.factor(lubridate::year(date_time))")
+      mutate_(day = "as.Date(date_time)", year = "as.factor(lubridate::year(date_time))")
   }
   
   df <- df %>%
@@ -494,7 +503,8 @@ timeData <- function(x = NULL, timeFrame = "weekday") {
 
 plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
   p <- ggplot(data = df, aes_string(x = timeFrame, y = "value")) +
-      labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
+    labs(x = stringr::str_to_title(timeFrame), y = "Interactions per Day")
+  
   if((!is.null(fillGroup)) && (daily == FALSE)){
     p <- p +
       geom_bar(aes_string(fill = fillGroup), stat = "identity", position = "dodge") +
@@ -512,11 +522,7 @@ plotBars <- function(df, fillGroup = NULL, timeFrame, daily = FALSE){
       geom_bar(fill = "steelblue", stat = "identity") +
       geom_text(aes_string(label = quote(round(value, 2))), vjust = 0)
   }
-  if (timeFrame == "day") {
-    p <- p +
-      theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-      labs(x = " ")
-  }
+
   ggplotly(p)
 }
 
