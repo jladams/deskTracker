@@ -392,16 +392,6 @@ d3HeatData <- reactive({
   return(df)
 })
 
-
-heatData <- function(x) {
-  df <- df() %>%
-    group_by_(x, day = "as.Date(date_time)", weekday = "lubridate::wday(date_time, label = TRUE)", hour = "lubridate::hour(date_time)") %>%
-    summarize(value = sum(value)) %>%
-    group_by_(x, "weekday", "hour") %>%
-    summarize(value = calc()(value))
-  return(df)
-}
-
 plotLines <- function(df, lineColor = NULL) {
 
   p <- ggplot(data = df, aes(x = hour, y = value)) +
