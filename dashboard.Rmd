@@ -25,7 +25,7 @@ dateRangeInput("dates", label = h4("Dates"), start = Sys.Date()-30, end = Sys.Da
 # textOutput("dateValidate")
 # output$dateValidate <- renderText({validate(need(input$dates[2] >= input$dates[1], "End Date is earlier than Start Date."))})
 
-selectInput("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "mean")
+selectInput("calculation", label = h4("Calculation to Use"), choices = c("Sum" = "sum", "Mean" = "mean", "Median" = "median", "Max" = "max", "Min" = "min"), selected = "sum")
 
 uniqueMode <- c(unique(factor(df1$mode) %>% as.vector()))
 uniqueType <- c(unique(factor(df1$type) %>% as.vector()))
